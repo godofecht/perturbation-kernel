@@ -4,7 +4,7 @@ version = "1.0.0"
 edition = "2021"
 license = "MIT"
 description = "Reference Rust implementation of the perturbation-kernel object (SCHEMA.md v1.0.0)."
-repository = "https://github.com/godofecht/theory-of-everything"
+repository = "https://github.com/godofecht/perturbation-kernel"
 readme = "README.md"
 
 [lib]

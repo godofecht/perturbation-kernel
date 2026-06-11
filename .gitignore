@@ -2,3 +2,8 @@ target/
 Cargo.lock
 *.swp
 .DS_Store
+# Lean build cache (re-fetched via `lake update`)
+lean/**/.lake/
+lean/**/lakefile.olean
+lean/**/lakefile.olean.hash
+lean/**/build/
