@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lean Proof Runner">
+  <rect width="512" height="512" rx="96" fill="#0b1021"/>
+  <!-- turnstile ⊢, the proof-theoretic "provable" sign -->
+  <g stroke="#7c9cff" stroke-width="34" stroke-linecap="round" fill="none">
+    <line x1="150" y1="120" x2="150" y2="392"/>
+    <line x1="150" y1="256" x2="372" y2="256"/>
+  </g>
+  <!-- a small green check: a discharged goal -->
+  <path d="M300 330 l34 34 l64 -86" stroke="#4ade80" stroke-width="30"
+        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

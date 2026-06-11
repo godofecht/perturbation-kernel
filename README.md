@@ -16,6 +16,12 @@ side by side: the Rust crate is what you call from code, the Lean library is
 what carries the proof obligations once the Wasserstein / empirical-measure
 machinery lands in Mathlib.
 
+A third surface, [`app/`](app/), is a mobile-first PWA for browsing,
+visualising, and running the Lean proofs from a phone: a file browser with Lean
+syntax highlighting, a proof-structure outline (declarations, `sorry` flags,
+tactic sequences), and a scratchpad that typechecks against a warm Mathlib
+environment and shows live goal states. See [`app/README.md`](app/README.md).
+
 ## Build
 
 ```

@@ -7,3 +7,9 @@ lean/**/.lake/
 lean/**/lakefile.olean
 lean/**/lakefile.olean.hash
 lean/**/build/
+
+# Mobile app (Node)
+app/**/node_modules/
+app/web/dist/
+app/web/*.tsbuildinfo
+app/server/.env
