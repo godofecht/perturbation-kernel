@@ -1,10 +1,20 @@
 # perturbation-kernel
 
-Reference Rust implementation of the perturbation-kernel object defined in
-[`../SCHEMA.md`](../SCHEMA.md) (v1.0.0). The mathematics it implements is in
+Two reference implementations of the perturbation-kernel object defined in
+[`../SCHEMA.md`](../SCHEMA.md) (v1.0.0). The mathematics is in
 [`../paper.tex`](../paper.tex), *A Measure-Theoretic Schema for Perturbation
-Kernels*. Where the two disagree, the paper governs the mathematics and the
-schema governs the wire formats.
+Kernels*. Where the two documents disagree, the paper governs the mathematics
+and the schema governs the wire formats.
+
+| Implementation | Path | Status |
+|---|---|---|
+| **Rust** &middot; runnable reference, C-ABI surface | `src/` + `tests/` | 22/22 tests pass, `clippy` clean |
+| **Lean 4 / Mathlib** &middot; formalised statements | [`lean/PerturbationKernel/`](lean/PerturbationKernel/) | `lake build` green; 5 theorems stated, Gaussian-shift example fully proven, four headline theorems `sorry`'d at the statement layer |
+
+The two implementations share the same `SCHEMA.md` and are deliberately kept
+side by side: the Rust crate is what you call from code, the Lean library is
+what carries the proof obligations once the Wasserstein / empirical-measure
+machinery lands in Mathlib.
 
 ## Build
 
