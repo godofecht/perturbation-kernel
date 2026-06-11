@@ -1,12 +1,14 @@
-/-
-Root module of the `PerturbationKernel` library. Re-exports the core
-definitions, the stability theorem (Thm 5.4), the sample-complexity bound
-(Thm 7.3), the conformance contract (Def 8.1 / Thm 8.2), and a worked
-Gaussian-shift example. See `PerturbationKernel/Basic.lean` for the
-substantive content.
+/-!
+# PerturbationKernel
+
+Lean 4 / Mathlib formalisation of the perturbation-kernel object defined in
+`SCHEMA.md` (companion to paper [82] *A Measure-Theoretic Schema for
+Perturbation Kernels*, A. Shivakumar 2026), plus the perturbative-invariantist
+critique of NHST built on the same framework (paper [83]).
 -/
 import PerturbationKernel.Basic
 import PerturbationKernel.Stability
 import PerturbationKernel.SampleComplexity
 import PerturbationKernel.Conformance
 import PerturbationKernel.Examples
+import PerturbationKernel.NHSTCritique
