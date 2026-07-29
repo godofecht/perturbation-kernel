@@ -13,8 +13,13 @@ workstation.
 
 | Registry | Credential | Where it lives |
 |---|---|---|
+| crates.io | none | trusted publishing over OIDC |
 | PyPI | `PYPI_API_TOKEN` | GitHub Actions secret, `pypi` environment |
-| crates.io | `CARGO_REGISTRY_TOKEN` | GitHub Actions secret, `crates-io` environment |
+
+crates.io needs no stored credential. `release.yml` exchanges the
+workflow's OIDC token for a short-lived registry token through
+`rust-lang/crates-io-auth-action`, and crates.io only honours it for
+this repository, this workflow file and the `crates-io` environment.
 
 Both publishing environments carry a deployment branch policy of `v*`
 (tags only). A push to a branch cannot reach them even by triggering
@@ -42,12 +47,12 @@ stored credential:
   `release.yml`, environment `pypi`. Then delete the `PYPI_API_TOKEN`
   secret and remove the `password:` line from the `pypi` job.
   `id-token: write` is already requested, so nothing else changes.
-- crates.io: add a Trusted Publishing config in the crate settings with
-  the same details, then delete `CARGO_REGISTRY_TOKEN`.
+crates.io is already done: the publisher is configured and the token
+that made the first publish has been revoked.
 
-Until then, scope the tokens as narrowly as the registry allows. A
-first publish needs an account-scoped PyPI token because the project
-does not exist yet; once it does, replace it with a project-scoped one.
+Until PyPI follows, scope its token as narrowly as the registry allows.
+The first publish needed an account-scoped token because the project
+did not exist yet; now that it does, a project-scoped one is enough.
 
 ## What the library itself touches
 
