@@ -1,0 +1,45 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "perturbation-kernel"
+version = "2.0.0"
+description = "Reproducible perturbation-kernel estimators with SIMD and GPU backends"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+authors = [{ name = "godofecht" }]
+keywords = ["monte-carlo", "simd", "gpu", "reproducibility", "statistics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.urls]
+Homepage = "https://github.com/godofecht/perturbation-kernel"
+Repository = "https://github.com/godofecht/perturbation-kernel"
+Issues = "https://github.com/godofecht/perturbation-kernel/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[tool.maturin]
+manifest-path = "Cargo.toml"
+python-source = "."
+module-name = "perturbation_kernel._perturbation_kernel"
+# The GPU backend ships in the wheel. `wgpu` loads its driver lazily
+# and reports no adapter on a headless box, so this costs nothing at
+# runtime on machines without one -- `available_backends()` simply
+# omits 'gpu' there.
+features = ["pyo3/extension-module", "gpu"]
+strip = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

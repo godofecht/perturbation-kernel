@@ -1,0 +1,78 @@
+name: Benchmarks
+
+# Measured numbers go stale faster than prose does, and a README that
+# quotes a speedup nobody has re-measured in six months is worse than
+# one that quotes none. This job re-runs the benches on a known machine
+# and writes the results back into BENCHMARKS.md and the README table,
+# so the numbers in the repository are always ones CI produced.
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "src/**"
+      - "benches/**"
+      - "Cargo.toml"
+      - ".github/workflows/bench.yml"
+  schedule:
+    # Monthly, so the numbers keep tracking toolchain and dependency
+    # drift even when nothing in the crate changes.
+    - cron: "0 4 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bench
+  cancel-in-progress: false
+
+jobs:
+  bench:
+    name: measure and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # A token with write access so the commit below can push.
+          # GITHUB_TOKEN is enough for the default branch.
+          persist-credentials: true
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Record the machine
+        id: machine
+        run: |
+          echo "cpu=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs)" >> "$GITHUB_OUTPUT"
+          echo "cores=$(nproc)" >> "$GITHUB_OUTPUT"
+          echo "rustc=$(rustc --version)" >> "$GITHUB_OUTPUT"
+
+      - name: Run the benchmarks
+        run: cargo bench --bench kernel -- --warm-up-time 1 --measurement-time 5 | tee bench.raw
+
+      - name: Render BENCHMARKS.md
+        env:
+          BENCH_CPU: ${{ steps.machine.outputs.cpu }}
+          BENCH_CORES: ${{ steps.machine.outputs.cores }}
+          BENCH_RUSTC: ${{ steps.machine.outputs.rustc }}
+          BENCH_RUN: ${{ github.run_id }}
+          BENCH_SHA: ${{ github.sha }}
+        run: python3 scripts/render_benchmarks.py bench.raw
+
+      - name: Commit if anything moved
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- BENCHMARKS.md README.md; then
+            echo "No change in the measured numbers."
+            exit 0
+          fi
+          git add BENCHMARKS.md README.md
+          git commit -m "Update benchmark numbers from CI
+
+          Measured on $BENCH_CPU ($BENCH_CORES cores).
+          Run: ${{ github.run_id }}"
+          git push
+        env:
+          BENCH_CPU: ${{ steps.machine.outputs.cpu }}
+          BENCH_CORES: ${{ steps.machine.outputs.cores }}

@@ -1,0 +1,5 @@
+# Pinned so a MkDocs release cannot silently break the docs build.
+# Material for MkDocs has announced that MkDocs 2.0 removes the plugin
+# system with no migration path, so the major versions stay bounded.
+mkdocs>=1.6,<2.0
+mkdocs-material>=9.5,<10.0

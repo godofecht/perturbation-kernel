@@ -1,0 +1,76 @@
+site_name: perturbation-kernel
+site_description: Reproducible perturbation-kernel estimators with SIMD and GPU backends
+site_url: https://godofecht.github.io/perturbation-kernel/
+repo_url: https://github.com/godofecht/perturbation-kernel
+repo_name: godofecht/perturbation-kernel
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Install: install.md
+      - Quickstart: quickstart.md
+      - Concepts: concepts.md
+  - Guides:
+      - Backends: backends.md
+      - Reproducibility: reproducibility.md
+      - Error bounds: error-bounds.md
+      - Performance: performance.md
+  - Reference:
+      - Python API: python-api.md
+      - Rust API: rust-api.md
+      - C API: c-api.md
+  - Examples: examples.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/godofecht/perturbation-kernel
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/perturbation-kernel/

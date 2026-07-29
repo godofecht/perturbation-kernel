@@ -27,6 +27,7 @@ fn cfg_for(seed: u64, n: u64) -> Config {
             invariance_lambda: Some(1.0),
         },
         accuracy: None,
+        backend: Default::default(),
     }
 }
 
@@ -42,10 +43,22 @@ fn d4_same_seed_same_value_gaussian() {
         sigma_max: 0.3,
         d: 2,
     };
-    let r1 = Engine::run(&base, &fam, &gaussian::Identity { d: 2 }, &gaussian::NegDispersion, &cfg)
-        .unwrap();
-    let r2 = Engine::run(&base, &fam, &gaussian::Identity { d: 2 }, &gaussian::NegDispersion, &cfg)
-        .unwrap();
+    let r1 = Engine::run(
+        &base,
+        &fam,
+        &gaussian::Identity { d: 2 },
+        &gaussian::NegDispersion,
+        &cfg,
+    )
+    .unwrap();
+    let r2 = Engine::run(
+        &base,
+        &fam,
+        &gaussian::Identity { d: 2 },
+        &gaussian::NegDispersion,
+        &cfg,
+    )
+    .unwrap();
     assert_eq!(r1.value.to_bits(), r2.value.to_bits());
 }
 
@@ -88,10 +101,22 @@ fn d4_byte_for_byte_report() {
         sigma_max: 0.2,
         d: 1,
     };
-    let r1 = Engine::run(&base, &fam, &gaussian::Identity { d: 1 }, &gaussian::NegDispersion, &cfg)
-        .unwrap();
-    let r2 = Engine::run(&base, &fam, &gaussian::Identity { d: 1 }, &gaussian::NegDispersion, &cfg)
-        .unwrap();
+    let r1 = Engine::run(
+        &base,
+        &fam,
+        &gaussian::Identity { d: 1 },
+        &gaussian::NegDispersion,
+        &cfg,
+    )
+    .unwrap();
+    let r2 = Engine::run(
+        &base,
+        &fam,
+        &gaussian::Identity { d: 1 },
+        &gaussian::NegDispersion,
+        &cfg,
+    )
+    .unwrap();
     let j1 = r1.to_json().unwrap();
     let j2 = r2.to_json().unwrap();
     assert_eq!(j1.as_bytes(), j2.as_bytes());

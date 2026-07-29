@@ -7,3 +7,15 @@ lean/**/.lake/
 lean/**/lakefile.olean
 lean/**/lakefile.olean.hash
 lean/**/build/
+
+# mkdocs output
+site/
+# Python build artefacts
+python/dist/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+
+# Built extension module (produced by maturin)
+*.abi3.so
+*.pyd

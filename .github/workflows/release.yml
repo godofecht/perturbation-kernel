@@ -1,0 +1,128 @@
+name: Release
+
+# Tag a version to cut a release:
+#
+#     git tag v2.0.0 && git push origin v2.0.0
+#
+# That builds wheels for every platform, publishes them to PyPI, and
+# publishes the Rust crate to crates.io. Running the workflow by hand
+# builds and uploads the wheels as artifacts without publishing
+# anything, which is the way to check a release before committing to it.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  wheels:
+    name: wheel ${{ matrix.platform.target }} on ${{ matrix.platform.os }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { os: ubuntu-latest, target: x86_64 }
+          - { os: ubuntu-latest, target: aarch64 }
+          - { os: macos-latest, target: x86_64 }
+          - { os: macos-latest, target: aarch64 }
+          - { os: windows-latest, target: x64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          # One abi3 wheel per platform serves CPython 3.8 and up.
+          args: --release --out dist --manifest-path python/Cargo.toml
+          sccache: "true"
+          # `manylinux` cross-builds run in a container old enough to
+          # keep the wheel broadly installable.
+          manylinux: auto
+
+      - name: Smoke-test the wheel
+        # Cross-compiled wheels cannot run on the builder, so only test
+        # the native ones. A wheel that imports and produces the
+        # expected value is worth more than one that merely built.
+        if: matrix.platform.target == 'x86_64' || matrix.platform.target == 'x64' || (matrix.platform.os == 'macos-latest' && matrix.platform.target == 'aarch64')
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --no-index --find-links dist perturbation-kernel
+          python -c "
+          import perturbation_kernel as pk
+          print('version ', pk.__version__)
+          print('backends', pk.available_backends())
+          print('simd    ', pk.simd_path())
+          r = pk.Markov(k=5, theta_max=0.3).run(pk.Config(n=50_000, seed=7))
+          a = pk.Markov(k=5, theta_max=0.3).run(pk.Config(n=50_000, seed=7, backend='scalar'))
+          assert r.value.hex() == a.value.hex(), 'backends disagreed in the built wheel'
+          assert 0.0 <= r.value <= 1.0
+          print('ok      ', r)
+          "
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.target }}
+          path: dist
+
+  sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the source distribution
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist --manifest-path python/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
+
+  pypi:
+    name: publish to PyPI
+    needs: [wheels, sdist]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: pypi
+    permissions:
+      # Trusted publishing: PyPI verifies this workflow's OIDC token,
+      # so there is no API token to store or rotate. Configure the
+      # publisher once at https://pypi.org/manage/account/publishing/
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+      - run: ls -la dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+
+  crates-io:
+    name: publish to crates.io
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: crates-io
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish the core crate
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        # The Python crate is `publish = false`; only the core crate
+        # goes to crates.io.
+        run: cargo publish --all-features

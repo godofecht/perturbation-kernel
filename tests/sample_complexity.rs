@@ -7,9 +7,7 @@
 //!    the observed deviation from the population mean with at least
 //!    the asserted probability `1 - eta`.
 
-use perturbation_kernel::config::{
-    Accuracy, Config, Intensity, Lipschitz, Reduction,
-};
+use perturbation_kernel::config::{Accuracy, Config, Intensity, Lipschitz, Reduction};
 use perturbation_kernel::engine::Engine;
 use perturbation_kernel::examples::markov;
 use serde_json::json;
@@ -39,6 +37,7 @@ fn run_with(seed: u64, n: u64, with_accuracy: bool) -> perturbation_kernel::repo
         } else {
             None
         },
+        backend: Default::default(),
     };
     let base = markov::Label { i: 0 };
     let fam = markov::UniformMixing {

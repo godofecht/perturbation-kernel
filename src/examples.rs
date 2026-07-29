@@ -99,15 +99,26 @@ pub mod gaussian {
             }
             let d = ensemble[0].len();
             let n = ensemble.len() as f64;
+            // One column buffer and one reduction scratch for the
+            // whole loop: `d` coordinates cost two allocations, not
+            // `2d`. The arithmetic is unchanged, so the value is
+            // bit-identical to v1.0.0.
+            let mut col: Vec<f64> = Vec::with_capacity(ensemble.len());
+            let mut scratch: Vec<f64> = Vec::with_capacity(ensemble.len());
             let mut total = 0.0_f64;
             for k in 0..d {
-                let col: Vec<f64> = ensemble.iter().map(|v| v[k]).collect();
-                let mean = tree_sum(&col) / n;
-                let centred: Vec<f64> =
-                    col.iter().map(|x| (x - mean) * (x - mean)).collect();
-                total += tree_sum(&centred) / n;
+                col.clear();
+                col.extend(ensemble.iter().map(|v| v[k]));
+                let mean = crate::reduce::mean_into(&col, &mut scratch);
+                total += crate::reduce::sum_sq_dev_into(&col, mean, &mut scratch) / n;
             }
-            Report::raw(-total, self.name(), ensemble.len() as u64, 0, Default::default())
+            Report::raw(
+                -total,
+                self.name(),
+                ensemble.len() as u64,
+                0,
+                Default::default(),
+            )
         }
         fn lipschitz_w1(&self) -> Option<f64> {
             // Empirical variance is *not* globally W_1-Lipschitz on
@@ -199,7 +210,13 @@ pub mod bistable {
             }
             let s = tree_sum(ensemble);
             let val = s / ensemble.len() as f64;
-            Report::raw(val, self.name(), ensemble.len() as u64, 0, Default::default())
+            Report::raw(
+                val,
+                self.name(),
+                ensemble.len() as u64,
+                0,
+                Default::default(),
+            )
         }
         fn lipschitz_w1(&self) -> Option<f64> {
             Some(1.0)
@@ -286,7 +303,13 @@ pub mod markov {
             }
             let s = tree_sum(ensemble);
             let val = s / ensemble.len() as f64;
-            Report::raw(val, self.name(), ensemble.len() as u64, 0, Default::default())
+            Report::raw(
+                val,
+                self.name(),
+                ensemble.len() as u64,
+                0,
+                Default::default(),
+            )
         }
         fn lipschitz_w1(&self) -> Option<f64> {
             Some(1.0)

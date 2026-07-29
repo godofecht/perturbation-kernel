@@ -5,9 +5,7 @@
 //! schema actually constrains; the checklist is a chain of MUST
 //! clauses on the engine + components.
 
-use perturbation_kernel::config::{
-    Accuracy, Config, Intensity, Lipschitz, Reduction,
-};
+use perturbation_kernel::config::{Accuracy, Config, Intensity, Lipschitz, Reduction};
 use perturbation_kernel::engine::Engine;
 use perturbation_kernel::examples::{bistable, gaussian, markov, Vector};
 use perturbation_kernel::forward::ForwardModel;
@@ -84,6 +82,7 @@ fn cfg_gaussian(n: u64, low: f64, high: f64) -> Config {
             invariance_lambda: None,
         },
         accuracy: None,
+        backend: Default::default(),
     }
 }
 
@@ -119,6 +118,7 @@ fn c2_identity_recovery_bistable() {
         reduction: Reduction::default(),
         lipschitz: Lipschitz::default(),
         accuracy: None,
+        backend: Default::default(),
     };
     // Start the marble at the +1 well; with theta == 0 the
     // deterministic drift takes it back to +1 every step.
@@ -147,6 +147,7 @@ fn c2_identity_recovery_markov() {
         reduction: Reduction::default(),
         lipschitz: Lipschitz::default(),
         accuracy: None,
+        backend: Default::default(),
     };
     let base = markov::Label { i: 2 };
     let fam = markov::UniformMixing {
@@ -170,8 +171,17 @@ fn c2_null_parameter_mismatch_rejected() {
         sigma_max: 0.0,
         d: 1,
     };
-    let res = Engine::run(&base, &fam, &gaussian::Identity { d: 1 }, &gaussian::NegDispersion, &cfg);
-    assert!(matches!(res, Err(perturbation_kernel::Error::NullParameterMismatch { .. })));
+    let res = Engine::run(
+        &base,
+        &fam,
+        &gaussian::Identity { d: 1 },
+        &gaussian::NegDispersion,
+        &cfg,
+    );
+    assert!(matches!(
+        res,
+        Err(perturbation_kernel::Error::NullParameterMismatch { .. })
+    ));
 }
 
 // ---------------------------------------------------------------------
@@ -222,6 +232,7 @@ fn c5_c6_engine_with_accuracy_emits_error_bound() {
             observation_diameter: 2.0,
             obs_dim: 1,
         }),
+        backend: Default::default(),
     };
     let base = markov::Label { i: 0 };
     let fam = markov::UniformMixing {
@@ -289,6 +300,7 @@ fn s11_sample_floor_rejects_underpowered_accuracy_claim() {
             observation_diameter: 2.0,
             obs_dim: 1,
         }),
+        backend: Default::default(),
     };
     let base = markov::Label { i: 0 };
     let fam = markov::UniformMixing {

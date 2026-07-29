@@ -1,15 +1,32 @@
 [package]
 name = "perturbation-kernel"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2021"
+rust-version = "1.85"
 license = "MIT"
-description = "Reference Rust implementation of the perturbation-kernel object (SCHEMA.md v1.0.0)."
+description = "Reference Rust implementation of the perturbation-kernel object (SCHEMA.md v1.0.0), with SIMD and GPU execution backends."
 repository = "https://github.com/godofecht/perturbation-kernel"
 readme = "README.md"
+keywords = ["monte-carlo", "simd", "gpu", "reproducibility", "statistics"]
+categories = ["science", "simulation", "mathematics"]
+exclude = ["lean/", "python/", "docs/"]
+
+[workspace]
+members = ["python"]
 
 [lib]
 name = "perturbation_kernel"
 crate-type = ["rlib", "cdylib", "staticlib"]
+
+[features]
+default = ["parallel", "simd"]
+# Multi-threaded ensemble generation. Bit-identical to single-threaded.
+parallel = ["dep:rayon"]
+# Vectorised reductions (NEON on aarch64, AVX2 on x86-64).
+# Bit-identical to the scalar path.
+simd = []
+# wgpu compute backend for the built-in families.
+gpu = ["dep:wgpu", "dep:bytemuck", "dep:pollster"]
 
 [dependencies]
 rand = "0.8"
@@ -18,10 +35,28 @@ rand_distr = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
+rayon = { version = "1.10", optional = true }
+# Default features pick the right native backend per platform:
+# Metal on Apple, Vulkan on Linux/Android, DX12 on Windows.
+wgpu = { version = "30", optional = true }
+bytemuck = { version = "1", optional = true, features = ["derive"] }
+pollster = { version = "0.4", optional = true }
 
 [dev-dependencies]
 proptest = "1"
+criterion = { version = "0.5", default-features = false, features = [
+    "cargo_bench_support",
+] }
+
+[[bench]]
+name = "kernel"
+harness = false
 
 [profile.release]
 opt-level = 3
 lto = "thin"
+codegen-units = 1
+
+[profile.bench]
+inherits = "release"
+debug = true

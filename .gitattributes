@@ -1,0 +1,3 @@
+GOLDEN.txt -text eol=lf
+*.rs text eol=lf
+*.wgsl text eol=lf

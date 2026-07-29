@@ -15,7 +15,7 @@ use crate::Rng;
 /// to satisfy the determinism contract (SCHEMA §8 D1-D2).
 pub trait Perturbation<S> {
     /// Intensity parameter type. Serialised JSON for cross-checking
-    /// against [`crate::config::Config::intensity::null_parameter`]
+    /// against [`Intensity::null_parameter`](crate::config::Intensity::null_parameter)
     /// (SCHEMA §5).
     type Theta: serde::Serialize + serde::de::DeserializeOwned + Clone;
 

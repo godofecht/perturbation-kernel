@@ -31,6 +31,50 @@ pub struct Report {
     /// OPTIONAL Paper Thm 5.4 stability modulus `Lambda * L * C`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stability_modulus: Option<f64>,
+    /// OPTIONAL execution provenance. Additive to SCHEMA §6: it
+    /// records *how* the value was computed, which matters because
+    /// [`crate::config::Backend::Gpu`] is a different numerical path
+    /// from the host backends.
+    ///
+    /// Use [`Report::to_json_v1`] to serialise without this block when
+    /// a strict v1.0.0 payload is required.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub execution: Option<Execution>,
+}
+
+/// Execution provenance (additive to SCHEMA §6).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Execution {
+    /// Requested backend: `"auto"`, `"scalar"`, `"simd"`, or `"gpu"`.
+    pub backend: String,
+    /// Vector path actually taken on the host: `"scalar"`, `"neon"`,
+    /// or `"avx2"`.
+    pub simd_path: String,
+    /// `true` when the draw loop was spread across a thread pool.
+    /// Does not affect [`Report::value`].
+    pub threaded: bool,
+    /// Device description when the run touched a GPU.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub device: Option<String>,
+    /// Working precision of the ensemble: `"f64"` on the host paths,
+    /// `"f32"` on the GPU path.
+    pub precision: String,
+}
+
+impl Execution {
+    /// Provenance for a run that stayed on the host.
+    pub fn host(backend: crate::config::Backend, n: u64) -> Self {
+        Self {
+            backend: backend.as_str().to_string(),
+            simd_path: crate::reduce::path_for(backend).as_str().to_string(),
+            threaded: cfg!(feature = "parallel")
+                && n >= crate::engine::PARALLEL_MIN
+                && backend != crate::config::Backend::Scalar
+                && !backend.is_device(),
+            device: None,
+            precision: "f64".to_string(),
+        }
+    }
 }
 
 /// Non-asymptotic error bound block (SCHEMA §6).
@@ -87,12 +131,21 @@ impl Report {
                 constants: BoundConstants::default(),
             },
             stability_modulus: None,
+            execution: None,
         }
     }
 
     /// Serialise to canonical JSON (SCHEMA §6).
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string(self)
+    }
+
+    /// Serialise without the additive [`Execution`] block, giving a
+    /// payload with exactly the SCHEMA v1.0.0 field set.
+    pub fn to_json_v1(&self) -> Result<String, serde_json::Error> {
+        let mut stripped = self.clone();
+        stripped.execution = None;
+        serde_json::to_string(&stripped)
     }
 
     /// Pretty-printed JSON for human inspection.

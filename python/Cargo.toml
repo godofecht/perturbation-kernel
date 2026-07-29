@@ -1,0 +1,26 @@
+[package]
+name = "perturbation-kernel-py"
+version = "2.0.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+description = "Python bindings for the perturbation-kernel reference implementation."
+repository = "https://github.com/godofecht/perturbation-kernel"
+publish = false
+
+[lib]
+name = "_perturbation_kernel"
+crate-type = ["cdylib"]
+
+[features]
+default = []
+# Forwarded to the core crate; enables Backend.GPU in the wheel.
+gpu = ["perturbation-kernel/gpu"]
+
+[dependencies]
+perturbation-kernel = { path = "..", version = "2.0.0", default-features = false, features = [
+    "parallel",
+    "simd",
+] }
+pyo3 = { version = "0.23", features = ["extension-module", "abi3-py38"] }
+serde_json = "1"

@@ -30,6 +30,102 @@ pub struct Config {
     /// [`crate::engine::Engine::run`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub accuracy: Option<Accuracy>,
+    /// Execution backend. Additive to SCHEMA §5 and omitted from the
+    /// wire form when [`Backend::Auto`], so a default config still
+    /// serialises to the exact v1.0.0 payload.
+    ///
+    /// This selects *how* the estimator is evaluated, not *what* it
+    /// evaluates: [`Backend::Scalar`] and [`Backend::Simd`] are
+    /// bit-identical to each other and to v1.0.0.
+    /// [`Backend::Gpu`] is a distinct numerical path; see
+    /// [`crate::gpu`] for its determinism contract.
+    #[serde(default, skip_serializing_if = "Backend::is_auto")]
+    pub backend: Backend,
+}
+
+/// Execution backend selector (additive to SCHEMA §5).
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Backend {
+    /// Pick the fastest host path available: vectorised reductions,
+    /// and multi-threaded ensemble generation above
+    /// [`crate::engine::PARALLEL_MIN`]. Bit-identical to
+    /// [`Backend::Scalar`].
+    #[default]
+    Auto,
+    /// Force the portable scalar path. This is the reference
+    /// implementation and the arbiter when two paths disagree.
+    Scalar,
+    /// Force the vectorised host path even on inputs too small to
+    /// amortise it. Bit-identical to [`Backend::Scalar`].
+    Simd,
+    /// Run on a compute device through `wgpu`, **bit-identically to
+    /// the host**.
+    ///
+    /// Available only for families the device can reproduce exactly.
+    /// Requesting it for one it cannot is an error rather than a silent
+    /// change of answer; see [`crate::gpu`] for which families qualify
+    /// and why.
+    Gpu,
+    /// Run on a compute device in single precision.
+    ///
+    /// Available for every built-in family and considerably faster than
+    /// [`Backend::Gpu`], but the ensemble is carried in `f32` and
+    /// normal deviates come from Box-Muller rather than the ziggurat,
+    /// so the result agrees with the host statistically rather than bit
+    /// for bit. Opt in deliberately, and read
+    /// [`crate::report::Execution`] on anything it produces.
+    #[serde(rename = "gpu_f32")]
+    GpuF32,
+}
+
+impl Backend {
+    /// `true` for [`Backend::Auto`]; used to keep the default out of
+    /// the serialised config.
+    pub fn is_auto(&self) -> bool {
+        matches!(self, Backend::Auto)
+    }
+
+    /// Lowercase tag matching the serialised form.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Backend::Auto => "auto",
+            Backend::Scalar => "scalar",
+            Backend::Simd => "simd",
+            Backend::Gpu => "gpu",
+            Backend::GpuF32 => "gpu_f32",
+        }
+    }
+
+    /// `true` for backends that dispatch to a compute device.
+    pub fn is_device(self) -> bool {
+        matches!(self, Backend::Gpu | Backend::GpuF32)
+    }
+}
+
+impl Default for Config {
+    /// A minimal valid config: `n = 1024`, seed `0`, a Dirac intensity
+    /// with null parameter `0.0`, tree/index reduction, no declared
+    /// Lipschitz constants, no accuracy claim.
+    ///
+    /// Intended for `..Default::default()` so that additive fields do
+    /// not break struct-literal construction.
+    fn default() -> Self {
+        Self {
+            schema_version: SCHEMA_VERSION.to_string(),
+            n: 1024,
+            seed: 0,
+            intensity: Intensity {
+                kind: "dirac".to_string(),
+                params: serde_json::json!({}),
+                null_parameter: serde_json::json!(0.0),
+            },
+            reduction: Reduction::default(),
+            lipschitz: Lipschitz::default(),
+            accuracy: None,
+            backend: Backend::Auto,
+        }
+    }
 }
 
 /// Intensity descriptor for `rho` (SCHEMA §5).
@@ -121,6 +217,13 @@ impl Config {
         Ok(())
     }
 
+    /// Return `self` with the execution backend replaced.
+    #[must_use]
+    pub fn with_backend(mut self, backend: Backend) -> Self {
+        self.backend = backend;
+        self
+    }
+
     /// Required `N` floor under Paper Thm 7.3(c) for the asserted
     /// `(epsilon, eta)` and the declared `Lambda` (SCHEMA §7).
     ///
@@ -141,7 +244,10 @@ impl Config {
 
 /// Extract the SemVer major component (SCHEMA §10).
 fn major(v: &str) -> u64 {
-    v.split('.').next().and_then(|s| s.parse().ok()).unwrap_or(0)
+    v.split('.')
+        .next()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0)
 }
 
 /// Sample-complexity floor of Paper Thm 7.3(c) (SCHEMA §7).

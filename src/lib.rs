@@ -19,23 +19,44 @@
 //! [`config::Config`], so two runs with the same config produce
 //! bit-identical [`report::Report`]s (SCHEMA §8 / Paper Thm 8.2).
 
+//! # Backends
+//!
+//! The estimator has one definition and several evaluation paths,
+//! selected by [`config::Backend`]:
+//!
+//! | Backend | Where | Agreement with v1.0.0 |
+//! |---|---|---|
+//! | [`Scalar`](config::Backend::Scalar) | one thread, portable loops | bit-identical (it *is* v1.0.0) |
+//! | [`Simd`](config::Backend::Simd) / [`Auto`](config::Backend::Auto) | NEON or AVX2 reductions, `rayon` draw loop | bit-identical |
+//! | [`Gpu`](config::Backend::Gpu) | `wgpu` compute, single precision | statistically equivalent, not bit-identical; see [`gpu`] |
+//!
+//! The first two are interchangeable: they compute the same reduction
+//! tree with the same IEEE-754 operations, so nothing about the host
+//! CPU or the thread count is observable in [`report::Report::value`].
+//! The GPU path is a genuinely different numerical path and says so in
+//! [`report::Execution`].
+
 #![deny(missing_docs)]
-#![deny(unsafe_code)]
+#![cfg_attr(not(feature = "simd"), deny(unsafe_code))]
 #![allow(clippy::needless_range_loop)]
 
 pub mod abi;
 pub mod config;
 pub mod engine;
 pub mod examples;
+pub mod family;
 pub mod forward;
+#[cfg(feature = "gpu")]
+pub mod gpu;
 pub mod invariance;
 pub mod perturbation;
+pub mod reduce;
 pub mod report;
 
 /// Crate-wide RNG type alias.
 ///
 /// The reference engine uses `ChaCha20` because it is reproducible, fast,
-/// and has a counter-based [`SeedableRng`] which makes the per-index
+/// and has a counter-based [`rand::SeedableRng`] which makes the per-index
 /// substream fork of SCHEMA §8 D2 cheap. The type alias is intentionally
 /// exposed: external [`Perturbation`](perturbation::Perturbation) /
 /// [`ForwardModel`](forward::ForwardModel) implementations
@@ -96,6 +117,30 @@ pub enum Error {
         /// Actual `n` supplied.
         n: u64,
     },
+
+    /// The requested [`config::Backend`] cannot run this workload.
+    ///
+    /// Raised when [`engine::Engine::run`] is asked for
+    /// [`config::Backend::Gpu`] (device code cannot call user trait
+    /// impls) and when the `gpu` feature is compiled out.
+    #[error("backend {backend} unavailable: {reason}")]
+    UnsupportedBackend {
+        /// Backend tag that was requested.
+        backend: &'static str,
+        /// Why it could not be used.
+        reason: String,
+    },
+
+    /// A compute device was requested but none could be acquired, or
+    /// the device rejected the workload.
+    #[error("gpu: {0}")]
+    Gpu(String),
+
+    /// A [`family::Family`] carried hyperparameters outside its
+    /// declared domain (an empty alphabet, a negative intensity
+    /// bound, a mixing probability above one).
+    #[error("invalid family: {0}")]
+    InvalidFamily(String),
 }
 
 /// Convenience alias used throughout the crate.

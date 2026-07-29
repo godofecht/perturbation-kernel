@@ -12,12 +12,12 @@
 //! `extern "C"` function pointers*. A C/C++ caller fills in those
 //! pointers and registers an opaque `state*`. The Rust side then wraps
 //! them as
-//! [`Perturbation`](crate::perturbation::Perturbation) /
-//! [`ForwardModel`](crate::forward::ForwardModel) /
-//! [`Invariance`](crate::invariance::Invariance) impls and drives the
+//! [`Perturbation`] /
+//! [`ForwardModel`] /
+//! [`Invariance`] impls and drives the
 //! engine.
 //!
-//! `pk_free_report` reclaims the [`Report`](crate::report::Report)
+//! `pk_free_report` reclaims the [`Report`]
 //! ownership; nothing here leaks. All `unsafe` in the crate is confined
 //! to this file (SCHEMA §9, conventions in the prompt).
 
@@ -59,13 +59,8 @@ pub struct PkPerturbationVTable {
     pub state: *mut c_void,
     pub null: extern "C" fn(state: *mut c_void) -> f64,
     pub sample_theta: extern "C" fn(state: *mut c_void, seed_lo: u64, seed_hi: u64) -> f64,
-    pub apply: extern "C" fn(
-        state: *mut c_void,
-        s: f64,
-        theta: f64,
-        seed_lo: u64,
-        seed_hi: u64,
-    ) -> f64,
+    pub apply:
+        extern "C" fn(state: *mut c_void, s: f64, theta: f64, seed_lo: u64, seed_hi: u64) -> f64,
 }
 
 /// Vtable for a foreign [`ForwardModel<f64, f64>`].
@@ -134,7 +129,13 @@ impl<'a> Invariance<f64> for CInvariance<'a> {
         } else {
             acc / ensemble.len() as f64
         };
-        Report::raw(val, self.name(), ensemble.len() as u64, 0, Default::default())
+        Report::raw(
+            val,
+            self.name(),
+            ensemble.len() as u64,
+            0,
+            Default::default(),
+        )
     }
     fn lipschitz_w1(&self) -> Option<f64> {
         if self.0.lipschitz_w1 < 0.0 {
@@ -210,7 +211,7 @@ pub unsafe extern "C" fn pk_run(
     let i = CInvariance(&*invariance);
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        Engine::run(&base, &p, &f, &i, &cfg)
+        Engine::run_sequential(&base, &p, &f, &i, &cfg)
     }));
     match result {
         Ok(Ok(report)) => {
