@@ -38,7 +38,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      # Every runner in this matrix has a vector path: AVX2 on the
+      # x86-64 ones, NEON on the Apple silicon one. Requiring it means a
+      # dispatch bug that silently falls back to the scalar loop fails
+      # the build instead of making every reduction test vacuous.
       - run: cargo test --release --all-targets
+        env:
+          PK_REQUIRE_SIMD: "1"
       - run: cargo test --release --doc
 
   # The whole point of the feature flags is that they change speed and
@@ -63,17 +69,32 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --release ${{ matrix.features }}
 
+  # Two MSRVs, because the `gpu` feature drags in wgpu, which needs a
+  # newer compiler than the rest of the crate. Someone who does not want
+  # a GPU backend should not be forced onto a newer toolchain for it.
   msrv:
-    name: MSRV 1.85
+    name: MSRV ${{ matrix.rust }} (${{ matrix.label }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rust: "1.85.0"
+            label: default features
+            args: "--lib"
+          - rust: "1.87.0"
+            label: all features
+            args: "--lib --all-features"
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.85.0
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
       - uses: Swatinem/rust-cache@v2
       # `cargo check` rather than `test`: the dev-dependencies carry
       # their own, higher MSRVs, and they are not part of the contract
       # a downstream user consumes.
-      - run: cargo check --lib --all-features
+      - run: cargo check ${{ matrix.args }}
 
   # The load-bearing test of this whole repository: the optimised,
   # vectorised, threaded engine must still produce the exact bits the

@@ -39,8 +39,9 @@ maturin develop --release
 perturbation-kernel = "2"
 ```
 
-Requires Rust 1.85 or later. Default features are `parallel` and `simd`,
-both of which are bit-identical to the reference path.
+Requires Rust 1.85 or later, or 1.87 with the `gpu` feature, which
+depends on `wgpu`. Default features are `parallel` and `simd`, both of
+which are bit-identical to the reference path.
 
 ```toml
 # Portable scalar only: no rayon, no intrinsics.

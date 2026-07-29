@@ -121,7 +121,7 @@ python -m pytest tests
 cd lean/PerturbationKernel && lake build
 ```
 
-Rust 1.85 or later.
+Rust 1.85 or later; 1.87 with the `gpu` feature, which depends on `wgpu`.
 
 ## Conformance
 
