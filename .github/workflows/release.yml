@@ -97,9 +97,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     environment: pypi
     permissions:
-      # Trusted publishing: PyPI verifies this workflow's OIDC token,
-      # so there is no API token to store or rotate. Configure the
-      # publisher once at https://pypi.org/manage/account/publishing/
+      # Requested so the job can switch to trusted publishing later
+      # without a permissions change; the token below takes precedence
+      # while it is set.
       id-token: write
     steps:
       - uses: actions/download-artifact@v4
@@ -111,6 +111,10 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
+          # Omit this and the action falls back to trusted publishing,
+          # which is the better long-term setup once a publisher is
+          # configured at https://pypi.org/manage/account/publishing/
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
   crates-io:
     name: publish to crates.io
@@ -124,5 +128,13 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         # The Python crate is `publish = false`; only the core crate
-        # goes to crates.io.
-        run: cargo publish --all-features
+        # goes to crates.io. Missing token is a skip rather than a
+        # failure, so a release can ship the wheels while the crates.io
+        # credential is still being set up.
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "::warning::CARGO_REGISTRY_TOKEN is not set; skipping crates.io."
+            echo "Add it at https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 0
+          fi
+          cargo publish --all-features
