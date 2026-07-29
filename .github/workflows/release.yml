@@ -26,12 +26,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # `native` marks the rows whose wheel the builder can actually
+        # install, which is the only place a smoke test means anything.
+        # The Linux aarch64 wheel is cross-built in a manylinux
+        # container and cannot run on the x86-64 host.
         platform:
-          - { os: ubuntu-latest, target: x86_64 }
-          - { os: ubuntu-latest, target: aarch64 }
-          - { os: macos-latest, target: x86_64 }
-          - { os: macos-latest, target: aarch64 }
-          - { os: windows-latest, target: x64 }
+          - { os: ubuntu-latest,   target: x86_64,  native: true }
+          - { os: ubuntu-latest,   target: aarch64, native: false }
+          - { os: macos-15-intel,  target: x86_64,  native: true }
+          - { os: macos-latest,    target: aarch64, native: true }
+          - { os: windows-latest,  target: x64,     native: true }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -50,10 +54,9 @@ jobs:
           manylinux: auto
 
       - name: Smoke-test the wheel
-        # Cross-compiled wheels cannot run on the builder, so only test
-        # the native ones. A wheel that imports and produces the
-        # expected value is worth more than one that merely built.
-        if: matrix.platform.target == 'x86_64' || matrix.platform.target == 'x64' || (matrix.platform.os == 'macos-latest' && matrix.platform.target == 'aarch64')
+        # A wheel that imports and produces the expected value is worth
+        # more than one that merely built.
+        if: matrix.platform.native
         shell: bash
         run: |
           python -m pip install --upgrade pip
