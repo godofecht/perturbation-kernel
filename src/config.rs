@@ -242,6 +242,23 @@ impl Config {
     }
 }
 
+/// Do two `null_parameter` values denote the same number?
+///
+/// Compared numerically rather than by JSON value identity, because
+/// most JSON producers cannot express the difference. JavaScript has a
+/// single number type, so `JSON.stringify(0.0)` is `0`; strict
+/// `serde_json::Value` equality would reject that against the `0.0` a
+/// Rust implementation reports, for no reason a caller could act on.
+///
+/// Non-numeric parameters still compare structurally, so a family whose
+/// `theta` is a vector or a record keeps exact matching.
+pub fn null_parameters_agree(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+    match (a.as_f64(), b.as_f64()) {
+        (Some(x), Some(y)) => x == y,
+        _ => a == b,
+    }
+}
+
 /// Extract the SemVer major component (SCHEMA §10).
 fn major(v: &str) -> u64 {
     v.split('.')

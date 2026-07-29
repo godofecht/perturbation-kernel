@@ -293,3 +293,138 @@ pub unsafe extern "C" fn pk_free_report(r: *mut PkReport) {
         drop(Box::from_raw(r));
     }
 }
+
+// =====================================================================
+// Family projection (SCHEMA §9, additive)
+// =====================================================================
+//
+// The vtable surface above is the general one: a foreign caller supplies
+// its own perturbation, forward model and functional. That is the right
+// shape for extending the schema from C, and the wrong shape for simply
+// *using* it, which is what a binding in another language almost always
+// wants.
+//
+// `pk_run_family` closes that gap. Both arguments are JSON, so a binding
+// needs no struct layout agreement, no function pointers and no
+// lifetime discipline: it formats two strings, gets a handle back, and
+// frees it. Every non-Rust binding in this repository is built on this
+// one function.
+
+/// Run one of the built-in families (SCHEMA §9, additive).
+///
+/// `family_json` is the serde form of [`crate::family::Family`], for
+/// example:
+///
+/// ```json
+/// {"family":"markov","k":5,"start":0,"base_label":0,"theta_max":0.3}
+/// ```
+///
+/// `config_json` is a [`Config`] payload (SCHEMA §5). Returns an opaque
+/// report handle to be freed with [`pk_free_report`], or null on error
+/// with a code written to `out_err`.
+///
+/// # Safety
+///
+/// `family_json` and `config_json` must be valid NUL-terminated C
+/// strings for the duration of the call. `out_err` must be null or
+/// point to a writable `c_int`.
+#[no_mangle]
+pub unsafe extern "C" fn pk_run_family(
+    family_json: *const c_char,
+    config_json: *const c_char,
+    out_err: *mut c_int,
+) -> *mut PkReport {
+    let set_err = |code: PkErr| {
+        if !out_err.is_null() {
+            *out_err = code as c_int;
+        }
+    };
+    set_err(PkErr::Ok);
+
+    if family_json.is_null() || config_json.is_null() {
+        set_err(PkErr::InvalidConfig);
+        return std::ptr::null_mut();
+    }
+
+    // Catch panics at the boundary: unwinding into a foreign frame is
+    // undefined behaviour.
+    let result = std::panic::catch_unwind(|| {
+        let fam_s = CStr::from_ptr(family_json).to_str().ok()?;
+        let cfg_s = CStr::from_ptr(config_json).to_str().ok()?;
+        let family: crate::family::Family = serde_json::from_str(fam_s).ok()?;
+        let cfg = Config::from_json(cfg_s).ok()?;
+        Some((family, cfg))
+    });
+
+    let (family, cfg) = match result {
+        Ok(Some(v)) => v,
+        Ok(None) => {
+            set_err(PkErr::InvalidConfig);
+            return std::ptr::null_mut();
+        }
+        Err(_) => {
+            set_err(PkErr::Panic);
+            return std::ptr::null_mut();
+        }
+    };
+
+    match std::panic::catch_unwind(move || family.run(&cfg)) {
+        Ok(Ok(report)) => {
+            let json = report.to_json().unwrap_or_default();
+            Box::into_raw(Box::new(PkReport {
+                json: CString::new(json).unwrap_or_default(),
+                value: report.value,
+            }))
+        }
+        Ok(Err(e)) => {
+            set_err(match e {
+                crate::Error::NullParameterMismatch { .. } => PkErr::NullParameterMismatch,
+                crate::Error::SampleFloor { .. } => PkErr::SampleFloor,
+                crate::Error::EmptyEnsemble => PkErr::EmptyEnsemble,
+                _ => PkErr::InvalidConfig,
+            });
+            std::ptr::null_mut()
+        }
+        Err(_) => {
+            set_err(PkErr::Panic);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Crate version as a static NUL-terminated string, e.g. `"2.1.0"`.
+#[no_mangle]
+pub extern "C" fn pk_version() -> *const c_char {
+    concat!(env!("CARGO_PKG_VERSION"), "\0").as_ptr() as *const c_char
+}
+
+/// Schema version this build implements, e.g. `"1.0.0"` (SCHEMA §10).
+#[no_mangle]
+pub extern "C" fn pk_schema_version() -> *const c_char {
+    concat!("1.0.0", "\0").as_ptr() as *const c_char
+}
+
+/// Host vector path in use: `"scalar"`, `"neon"` or `"avx2"`.
+///
+/// Informational. It never changes a computed value.
+#[no_mangle]
+pub extern "C" fn pk_simd_path() -> *const c_char {
+    match crate::reduce::active_backend() {
+        crate::reduce::SimdPath::Scalar => c"scalar".as_ptr(),
+        crate::reduce::SimdPath::Neon => c"neon".as_ptr(),
+        crate::reduce::SimdPath::Avx2 => c"avx2".as_ptr(),
+    }
+}
+
+/// `1` when a compute device is usable, `0` otherwise.
+#[no_mangle]
+pub extern "C" fn pk_gpu_available() -> c_int {
+    #[cfg(feature = "gpu")]
+    {
+        crate::gpu::available() as c_int
+    }
+    #[cfg(not(feature = "gpu"))]
+    {
+        0
+    }
+}

@@ -1,0 +1,26 @@
+[package]
+name = "perturbation-kernel-wasm"
+version = "2.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+description = "WebAssembly bindings for the perturbation-kernel reference implementation."
+repository = "https://github.com/godofecht/perturbation-kernel"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Scalar only. `parallel` needs threads that wasm32-unknown-unknown does
+# not provide without shared memory, and `simd` uses architecture
+# intrinsics that do not exist there. The scalar path is the reference
+# path, so the numbers are unchanged either way -- see the equivalence
+# test in bindings/ts/tests.
+perturbation-kernel = { path = "../..", default-features = false }
+wasm-bindgen = "0.2"
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"
+lto = true

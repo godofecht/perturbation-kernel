@@ -135,7 +135,7 @@ impl Engine {
         // C2: enforce that the null parameter declared in the wire
         // payload matches the implementation's (SCHEMA §5 last paragraph).
         let null_p = serde_json::to_value(fam.null())?;
-        if null_p != cfg.intensity.null_parameter {
+        if !crate::config::null_parameters_agree(&null_p, &cfg.intensity.null_parameter) {
             return Err(Error::NullParameterMismatch {
                 config: cfg.intensity.null_parameter.to_string(),
                 perturbation: null_p.to_string(),

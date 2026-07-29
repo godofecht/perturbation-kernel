@@ -19,3 +19,11 @@ __pycache__/
 # Built extension module (produced by maturin)
 *.abi3.so
 *.pyd
+
+# Binding build artefacts
+bindings/ts/pkg/
+bindings/ts/node_modules/
+bindings/zig/.zig-cache/
+bindings/zig/zig-out/
+build/
+*.o

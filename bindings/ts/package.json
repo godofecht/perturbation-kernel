@@ -1,0 +1,19 @@
+{
+  "name": "perturbation-kernel",
+  "version": "2.1.0",
+  "description": "Reproducible perturbation-kernel estimators, compiled to WebAssembly",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": ["index.js", "index.d.ts", "pkg/", "README.md"],
+  "scripts": {
+    "build": "wasm-pack build --target nodejs --out-dir pkg --release",
+    "test": "node tests/test.mjs"
+  },
+  "keywords": ["monte-carlo", "reproducibility", "statistics", "wasm", "webassembly"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/godofecht/perturbation-kernel.git"
+  },
+  "engines": { "node": ">=18" }
+}

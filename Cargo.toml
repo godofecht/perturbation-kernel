@@ -1,6 +1,6 @@
 [package]
 name = "perturbation-kernel"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2021"
 rust-version = "1.85"
 license = "MIT"
@@ -12,7 +12,7 @@ categories = ["science", "simulation", "mathematics"]
 exclude = ["lean/", "python/", "docs/"]
 
 [workspace]
-members = ["python"]
+members = ["python", "bindings/ts"]
 
 [lib]
 name = "perturbation_kernel"
@@ -41,6 +41,16 @@ rayon = { version = "1.10", optional = true }
 wgpu = { version = "30", optional = true }
 bytemuck = { version = "1", optional = true, features = ["derive"] }
 pollster = { version = "0.4", optional = true }
+
+# `rand`'s `std` feature pulls in `getrandom`, which refuses to build for
+# wasm32 unless told which host API to use. The crate never calls it --
+# every random bit comes from a ChaCha20 stream keyed by the config seed
+# -- but it still has to link. Dropping `std` instead would route
+# `rand_distr`'s ziggurat through `libm` rather than the platform math
+# library, which could move the values and break bit-identity with
+# v1.0.0. So: keep `std`, and satisfy `getrandom` on wasm only.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 proptest = "1"

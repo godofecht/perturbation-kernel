@@ -1,6 +1,7 @@
 # perturbation-kernel
 
-Reproducible perturbation-kernel estimators with SIMD and GPU backends.
+Perturbative stability estimation with a reproducibility guarantee at
+the bit level. Rust core, five language bindings.
 
 [![CI](https://github.com/godofecht/perturbation-kernel/actions/workflows/ci.yml/badge.svg)](https://github.com/godofecht/perturbation-kernel/actions/workflows/ci.yml)
 [![Docs](https://github.com/godofecht/perturbation-kernel/actions/workflows/docs.yml/badge.svg)](https://godofecht.github.io/perturbation-kernel/)
@@ -10,15 +11,17 @@ Reproducible perturbation-kernel estimators with SIMD and GPU backends.
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange?logo=rust&logoColor=white)](https://github.com/godofecht/perturbation-kernel/blob/main/Cargo.toml)
 [![License](https://img.shields.io/pypi/l/perturbation-kernel)](LICENSE)
 
-A perturbation kernel answers one question: how much does a result move
-when you nudge the thing that produced it?
+Given a base state `s`, a parametrised Markov kernel `P((s, θ), ·)`, an
+intensity law `ρ` over `θ`, a measurable forward map `F: S → O`, and a
+functional `Φ: M₁(O) → R`, the engine evaluates the plug-in estimator
 
-You supply a base state, a family of random perturbations with an
-intensity you control, a forward map to whatever you actually observe,
-and a scalar functional of the resulting ensemble. You get back that
-scalar and a non-asymptotic error bound. The answer is a pure function
-of `(family, n, seed)`, so the same three inputs give the same bits on
-any machine, any thread count, any CPU vector width.
+```
+Φ̂_N(s) = Φ( (1/N) Σᵢ δ_{F(Sᵢ)} ),    Sᵢ ~ P((s, θᵢ), ·),  θᵢ ~ ρ
+```
+
+and returns it with a non-asymptotic error bound. The estimate is a pure
+function of `(family, N, seed)`: no ambient entropy, no thread-count
+dependence, no accumulation order that varies with hardware.
 
 **[Documentation](https://godofecht.github.io/perturbation-kernel/)**
 
@@ -37,22 +40,40 @@ Reference implementation of the perturbation-kernel object defined in
 for Perturbation Kernels*. Where the two disagree, the paper governs the
 mathematics and the schema governs the wire formats.
 
-| Implementation | Path | Status |
+| Surface | Path | Mechanism |
 |---|---|---|
-| **Rust** · engine, C ABI, SIMD and GPU backends | `src/`, `tests/` | 61 tests, `clippy` clean |
-| **Python** · bindings, abi3 wheels for CPython 3.8+ | `python/` | 94 tests |
-| **Lean 4 / Mathlib** · formalised statements | `lean/PerturbationKernel/` | `lake build` green; 5 theorems stated, Gaussian-shift example fully proven, four headline theorems `sorry`'d at the statement layer |
+| **Rust** · engine, traits, backends | `src/`, `tests/` | native |
+| **Python** · abi3 wheels, CPython 3.8+ | `python/` | PyO3 |
+| **C / C++** · header-only C++20 wrapper | `bindings/cpp/` | C ABI |
+| **Zig** · `@cImport` module | `bindings/zig/` | C ABI |
+| **Julia** · `ccall` module | `bindings/julia/` | C ABI |
+| **TypeScript** · Node, Deno, browser | `bindings/ts/` | wasm32 |
+| **Lean 4 / Mathlib** · formalised statements | `lean/` | `lake build` green; 5 theorems stated, Gaussian-shift example fully proven, four headline theorems `sorry`'d at the statement layer |
+
+Every binding routes through the same engine. CI runs a cross-language
+agreement job comparing raw `f64` bit patterns rather than each binding
+against its own constant:
+
+```
+language       value                  bits
+----------------------------------------------------------
+rust           0.8802871704101562     3fec2b5000000000
+python         0.8802871704101562     3fec2b5000000000
+c++            0.8802871704101562     3fec2b5000000000
+julia          0.8802871704101562     3fec2b5000000000
+typescript     0.8802871704101562     3fec2b5000000000
+```
 
 ## Install
 
 ```bash
-pip install perturbation-kernel
+pip install perturbation-kernel          # Python
+cargo add perturbation-kernel            # Rust
+npm install perturbation-kernel          # TypeScript / wasm
 ```
 
-```toml
-[dependencies]
-perturbation-kernel = "2"
-```
+C++, Zig and Julia link the C ABI from `cargo build --release`; see
+`bindings/`.
 
 ## Backends
 
@@ -64,19 +85,23 @@ perturbation-kernel = "2"
 | `gpu` | `wgpu` compute on Metal, Vulkan or DX12 | **bit-identical** |
 | `gpu_f32` | the same, in single precision | statistically equivalent |
 
-The three host backends compute the same reduction tree with the same
-IEEE-754 operations, so your CPU's vector width and your core count are
-not observable in the output.
+Vectorisation is exact because each tree-level output is one IEEE-754
+addition of one fixed operand pair; four lanes perform the same four
+additions. No lane-crossing accumulator, no reassociation, and the
+centring step is an explicit subtract-then-multiply so it cannot
+contract into an FMA, which rounds once where the reference rounds
+twice.
 
-`gpu` is bit-identical too. That is possible because the Markov family's
-arithmetic is a short list of exactly-specified operations: `f64.wgsl`
-emulates binary64 multiplication in `u32` pairs, `rand`'s integer
-sampler is transcribed rather than approximated, and the observation is
-an indicator so the reduction is integer addition. Families that draw
-normal deviates need `ln` and `exp`, which WGSL does not specify
-exactly, so `gpu` refuses them rather than quietly returning a different
-number. `gpu_f32` runs those, faster and approximately, and says so in
-`report.execution`.
+`gpu` is exact for `Markov` because that family's arithmetic reduces to
+a short, fully-specified list: `f64.wgsl` emulates binary64
+multiplication in `u32` pairs with round-to-nearest-even, rand's Lemire
+rejection sampler is transcribed rather than approximated, and the
+indicator observation makes the reduction integer addition, which is
+associative and therefore scheduling-invariant. Families drawing normal
+deviates require `ln` and `exp`, whose accuracy WGSL leaves to the
+driver, so `gpu` rejects them rather than silently returning a different
+number. `gpu_f32` runs those, faster and approximately, and records
+`precision: "f32"` in `report.execution`.
 
 <!-- BENCH:START -->
 

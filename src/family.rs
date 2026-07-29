@@ -180,7 +180,10 @@ impl Family {
         if cfg.n == 0 {
             return Err(Error::EmptyEnsemble);
         }
-        if self.null_parameter() != cfg.intensity.null_parameter {
+        if !crate::config::null_parameters_agree(
+            &self.null_parameter(),
+            &cfg.intensity.null_parameter,
+        ) {
             return Err(Error::NullParameterMismatch {
                 config: cfg.intensity.null_parameter.to_string(),
                 perturbation: self.null_parameter().to_string(),

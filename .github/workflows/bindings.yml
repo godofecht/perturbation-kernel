@@ -1,0 +1,182 @@
+name: Bindings
+
+# Four language bindings, all on the same C ABI (except TypeScript,
+# which goes through wasm). Each has a conformance test asserting the
+# *same* reference value the Rust and Python suites assert on, because
+# the thing that can break in a binding is not the arithmetic -- it is
+# whether a value survives the boundary unchanged.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "src/**"
+      - "bindings/**"
+      - "Cargo.toml"
+      - ".github/workflows/bindings.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "bindings/**"
+      - "Cargo.toml"
+      - ".github/workflows/bindings.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  cpp:
+    name: C++ (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the static library
+        run: cargo build --release
+      - name: Configure and build
+        run: |
+          cmake -S bindings/cpp -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+      - name: Run the conformance test
+        shell: bash
+        run: ./build/test_bindings 2>/dev/null || ./build/Release/test_bindings.exe
+
+  zig:
+    name: Zig (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.0
+      - name: Build the static library
+        run: cargo build --release
+      - name: Run the conformance checks
+        working-directory: bindings/zig
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            # Zig 0.14's Mach-O reader rejects archive members from
+            # current Apple toolchains, so link with the system linker.
+            zig build-obj check.zig -I ../cpp/include -lc \
+              -target aarch64-macos -femit-bin=check.o
+            cc check.o ../../target/release/libperturbation_kernel.a -o check \
+              -framework CoreFoundation -framework Foundation -framework Metal \
+              -framework QuartzCore -framework CoreGraphics -framework IOKit \
+              -framework IOSurface -framework AppKit -lobjc -liconv
+            ./check
+          else
+            zig build check
+          fi
+
+  julia:
+    name: Julia (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1"
+      - name: Build the shared library
+        run: cargo build --release
+      - name: Run the conformance test
+        shell: bash
+        run: |
+          LIB=$(ls target/release/libperturbation_kernel.so \
+                   target/release/libperturbation_kernel.dylib 2>/dev/null | head -1)
+          echo "linking against $LIB"
+          PK_LIBRARY="$PWD/$LIB" julia --project=bindings/julia \
+            -e 'using Pkg; Pkg.test()'
+
+  typescript:
+    name: TypeScript / wasm (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "24"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+      - name: Build the wasm package
+        working-directory: bindings/ts
+        run: wasm-pack build --target nodejs --out-dir pkg --release
+      - name: Run the conformance test
+        working-directory: bindings/ts
+        run: node tests/test.mjs
+
+  # The bindings only mean anything if they all return the same number.
+  # This job runs every language that can be installed on one runner and
+  # compares them against each other, rather than each against a
+  # hardcoded constant in its own file.
+  agreement:
+    name: all bindings agree
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1"
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.0
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      - name: Build everything
+        run: |
+          cargo build --release
+          cmake -S bindings/cpp -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+          (cd bindings/ts && wasm-pack build --target nodejs --out-dir pkg --release)
+          python -m pip install maturin
+          maturin build --release -m python/Cargo.toml --out dist
+          python -m pip install --no-index --find-links dist perturbation-kernel
+
+      - name: Collect one value from every language
+        run: python3 scripts/check_binding_agreement.py

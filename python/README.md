@@ -1,19 +1,21 @@
 # perturbation-kernel
 
-Reproducible perturbation-kernel estimators with SIMD and GPU backends.
+Perturbative stability estimation with a reproducibility guarantee at
+the bit level.
 
-A perturbation kernel answers one question: how much does a result move
-when you nudge the thing that produced it? You supply a base state, a
-family of random perturbations, a forward map to what you actually
-observe, and a scalar functional of the resulting ensemble. You get back
-that scalar and a non-asymptotic error bound.
+Given a base state `s`, a parametrised Markov kernel `P((s, θ), ·)`, an
+intensity law `ρ` over `θ`, a measurable forward map `F: S → O`, and a
+functional `Φ: M₁(O) → R`, the engine evaluates the plug-in estimator
 
-The estimator is a pure function of `(family, n, seed)`. Same three
-inputs, same bits, on any machine, any thread count, any CPU vector
-width.
+```
+Φ̂_N(s) = Φ( (1/N) Σᵢ δ_{F(Sᵢ)} ),    Sᵢ ~ P((s, θᵢ), ·),  θᵢ ~ ρ
+```
 
-Python bindings over the Rust reference implementation of
-[SCHEMA.md v1.0.0](https://github.com/godofecht/perturbation-kernel).
+and returns it with a non-asymptotic error bound. The estimate is a pure
+function of `(family, N, seed)`: no ambient entropy, no thread-count
+dependence, no accumulation order that varies with hardware.
+
+Reference implementation of `SCHEMA.md` v1.0.0.
 
 ## Install
 
@@ -21,91 +23,126 @@ Python bindings over the Rust reference implementation of
 pip install perturbation-kernel
 ```
 
-Wheels ship for Linux, macOS and Windows on CPython 3.8+ (stable ABI, so
-one wheel per platform covers every version).
+abi3 wheels for CPython 3.8+ on Linux, macOS and Windows, both
+architectures. No Rust toolchain required.
 
 ## Use
 
 ```python
 import perturbation_kernel as pk
 
-cfg = pk.Config(n=100_000, seed=20260610, invariance_lambda=1.0)
-report = pk.Markov(k=5, theta_max=0.3).run(cfg)
+cfg = pk.Config(n=262_144, seed=20260610, invariance_lambda=1.0)
+r = pk.Markov(k=5, theta_max=0.3).run(cfg)
 
-print(report.value)        # 0.880235
-print(report.functional)   # tail_survival
-print(report.execution)    # {'backend': 'auto', 'simd_path': 'neon', ...}
+r.value       # 0.8802871704101562
+r.functional  # 'tail_survival'
+r.execution   # {'backend': 'auto', 'simd_path': 'neon', 'precision': 'f64', ...}
 ```
 
-Three families ship built in:
+## Built-in families
 
-| Family | Perturbation | Invariance | Range |
+| Family | Kernel `P((s, θ), ·)` | Functional `Φ` | Codomain |
 |---|---|---|---|
-| `Gaussian(base, sigma_max)` | `s + sigma * N(0, I)` | negative dispersion | `<= 0` |
-| `Bistable(x0, dt, theta_max)` | one Langevin step in a double well | polarisation | `[-1, 1]` |
-| `Markov(k, theta_max, start, base_label)` | mix to uniform w.p. `theta` | tail survival | `[0, 1]` |
+| `Gaussian(base, sigma_max)` | `s + θ·N(0, I)`, `θ ~ U[0, σ_max]` | negative summed coordinate variance | `(-∞, 0]` |
+| `Bistable(x0, dt, theta_max)` | one Euler-Maruyama step in `V(x) = (x²-1)²` | polarisation `E[sgn X]` | `[-1, 1]` |
+| `Markov(k, theta_max, start, base_label)` | mix to `U{0..k-1}` w.p. `θ` | survival `P(X = base_label)` | `[0, 1]` |
 
-## Error bounds
-
-Declare the Lipschitz constants and an accuracy target, and the report
-carries the Theorem 7.3 bound. Claiming an accuracy that `n` cannot
-support is an error, not a footnote:
+All three satisfy the C2 identity contract: `θ₀ = 0` and
+`P((s, θ₀), ·) = δ_s`, so the null perturbation is exactly recoverable
+rather than approximately so.
 
 ```python
-cfg = pk.Config(
-    n=1_000_000, seed=1,
-    invariance_lambda=1.0, forward_l=1.0,
-    epsilon=0.05, eta=0.05, observation_diameter=1.0, obs_dim=1,
-)
-r = pk.Markov(k=5, theta_max=0.3).run(cfg)
-print(r.error_bound)   # {'epsilon': 0.0158..., 'eta': 0.05, ...}
-
-pk.Markov(k=5, theta_max=0.3).run(pk.Config(
-    n=100, seed=1, invariance_lambda=1.0,
-    epsilon=0.05, eta=0.05, observation_diameter=1.0, obs_dim=1))
-# ValueError: sample-complexity floor: requested (0.05,0.05) needs N >= 262144, got 100
+pk.Markov(k=5, theta_max=0.0, start=2, base_label=2).run(cfg).value  # exactly 1.0
+pk.Gaussian(base=[1.5, -2.0], sigma_max=0.0).run(cfg).value          # exactly 0.0
 ```
+
+## Determinism
+
+Draw `i` consumes the substream `ChaCha20(mix64(seed, i))`, so the
+ensemble is index-addressable and order-free. Reduction is a fixed-shape
+pairwise tree keyed to the index order, not to the thread count, which
+is what keeps a non-associative float sum reproducible.
+
+```python
+a = pk.Markov(k=5, theta_max=0.3).run(pk.Config(n=50_000, seed=7))
+b = pk.Markov(k=5, theta_max=0.3).run(pk.Config(n=50_000, seed=7, backend="scalar"))
+a.value.hex() == b.value.hex()   # True — identical mantissa, not "close"
+```
+
+CI verifies this against golden values captured from v1.0.0, across four
+native OS/architecture combinations and every feature configuration.
 
 ## Backends
 
 ```python
-pk.available_backends()   # ['auto', 'scalar', 'simd', 'gpu']
-pk.simd_path()            # 'neon'
-pk.gpu_device()           # 'Apple M4 Max (Metal, IntegratedGpu)'
+pk.available_backends()   # ['auto', 'scalar', 'simd', 'gpu', 'gpu_f32']
+pk.simd_path()            # 'neon' | 'avx2' | 'scalar'
+pk.gpu_device()           # 'Apple M4 Max (Metal, IntegratedGpu)' or None
 ```
 
-`auto`, `scalar` and `simd` are bit-identical to each other. They differ
-only in how long they take.
+| Backend | Execution | Agreement |
+|---|---|---|
+| `scalar` | single-threaded, portable | reference |
+| `simd` | NEON `vpaddq_f64` / AVX2 `vhaddpd`+`vpermpd` | bit-identical |
+| `auto` | vectorised, `rayon` above 4096 draws | bit-identical |
+| `gpu` | `wgpu` compute, emulated binary64 | bit-identical |
+| `gpu_f32` | `wgpu` compute, single precision | statistically equivalent |
 
-`gpu` is a different numerical path. The device carries the ensemble in
-single precision and draws normals by Box-Muller rather than the
-ziggurat, so it agrees with the host statistically rather than bit for
-bit. It draws from the same ChaCha20 substreams, which keeps the
-agreement tight in practice (~1e-4 at n=200k). `report.execution`
-always records which path ran, so a device result can never be mistaken
-for a host one.
+Vectorisation is exact because each tree-level output is one IEEE-754
+addition of one fixed operand pair; four lanes perform the same four
+additions. No lane-crossing accumulator, no reassociation, and the
+centring step is an explicit subtract-then-multiply so it cannot
+contract into an FMA (which rounds once where the reference rounds
+twice).
+
+`gpu` is exact for `Markov` because that family's arithmetic reduces to
+a short, fully-specified list: `f64.wgsl` emulates binary64
+multiplication in `u32` pairs with round-to-nearest-even, rand's Lemire
+rejection sampler is transcribed rather than approximated, and the
+indicator observation makes the reduction integer addition — associative,
+hence scheduling-invariant. Families drawing normal deviates require
+`ln`/`exp`, whose accuracy WGSL leaves to the driver, so `gpu` rejects
+them rather than silently returning a different number:
 
 ```python
-host = pk.Markov(k=5, theta_max=0.3).run(pk.Config(n=200_000, seed=1))
-dev  = pk.Markov(k=5, theta_max=0.3).run(
-    pk.Config(n=200_000, seed=1, backend="gpu")
-)
-abs(host.value - dev.value)   # 3e-4
+pk.Gaussian(base=[0.5], sigma_max=0.3).run(pk.Config(n=1024, backend="gpu"))
+# RuntimeError: ... use backend "gpu_f32" to accept a single-precision result
 ```
 
-## Reproducibility
+## Error bounds
+
+Declare `Λ` (Wasserstein-1 Lipschitz constant of `Φ`), the observation
+diameter `D`, and `d_obs`, and the report carries the Theorem 7.3 bound:
+a McDiarmid concentration term `√(Λ²D²/2N · ln(2/η))` plus a
+Fournier-Guillin bias term for the empirical-measure convergence rate.
+
+An accuracy claim below the Theorem 7.3(c) sample floor is rejected at
+run time rather than reported optimistically:
 
 ```python
-a = pk.Config(n=50_000, seed=7)
-b = pk.Config(n=50_000, seed=7, backend="scalar")
-pk.Markov(k=5, theta_max=0.3).run(a).value \
-    == pk.Markov(k=5, theta_max=0.3).run(b).value   # True, exactly
+pk.sample_floor(invariance_lambda=1.0, observation_diameter=1.0,
+                epsilon=0.05, eta=0.05, obs_dim=1)          # 262144
+
+pk.Markov(k=5, theta_max=0.3).run(pk.Config(
+    n=1000, seed=1, invariance_lambda=1.0,
+    epsilon=0.05, eta=0.05, observation_diameter=1.0, obs_dim=1))
+# ValueError: sample-complexity floor: requested (0.05,0.05) needs N >= 262144
 ```
 
-Randomness flows through a ChaCha20 stream keyed by `seed` and forked
-per draw index, so draw `i` never depends on how many other draws ran or
-in what order. `report.to_json(v1=True)` gives the strict SCHEMA v1.0.0
-payload if you need to hand it to another implementation.
+The floor is dominated by the bias term, not the variance term: the
+Wasserstein rate converges more slowly than the concentration does, so
+tightening `ε` by 10× costs 256× the compute.
+
+## Other languages
+
+The same engine, the same bits, through the C ABI (and wasm for
+TypeScript): **Rust**, **C/C++**, **Zig**, **Julia**, **TypeScript**.
+CI runs a cross-language agreement job that compares raw `f64` bit
+patterns across all of them rather than each against a constant.
+
+## Documentation
+
+<https://godofecht.github.io/perturbation-kernel/>
 
 ## License
 
