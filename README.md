@@ -79,8 +79,8 @@ number. `gpu_f32` runs those, faster and approximately, and says so in
 
 | | speedup | against |
 |---|---|---|
-| Reductions | 1.5x to 9.3x | the v1.0.0 reduction |
-| Engine | 2.4x to 3.2x | one thread, scalar loops |
+| Reductions | 1.6x to 10.8x | the v1.0.0 reduction |
+| Engine | 2.4x to 3.1x | one thread, scalar loops |
 
 Measured by CI on AMD EPYC 7763 64-Core Processor (4 cores). Full tables in
 [BENCHMARKS.md](BENCHMARKS.md).
