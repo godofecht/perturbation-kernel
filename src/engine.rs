@@ -61,7 +61,7 @@ impl Engine {
     /// * [`Error::SampleFloor`] if `cfg.accuracy` is set and `cfg.n` is
     ///   below the Paper Thm 7.3(c) floor (SCHEMA §7).
     /// * [`Error::UnsupportedBackend`] if `cfg.backend` is
-    ///   [`Backend::Gpu`]: a device cannot call back into arbitrary
+    ///   [`Backend::Gpu`](crate::config::Backend::Gpu): a device cannot call back into arbitrary
     ///   Rust trait impls, so GPU execution is offered only for the
     ///   built-in families of [`crate::family::Family`].
     ///

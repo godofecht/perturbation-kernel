@@ -172,7 +172,7 @@ impl Family {
     ///
     /// Dispatches on `cfg.backend`: the host paths are bit-identical to
     /// [`crate::engine::Engine::run`] on the corresponding trait impls,
-    /// and [`Backend::Gpu`] runs on a compute device under the
+    /// and [`Backend::Gpu`](crate::config::Backend::Gpu) runs on a compute device under the
     /// looser contract documented in [`crate::gpu`].
     pub fn run(&self, cfg: &Config) -> Result<Report> {
         self.validate()?;
