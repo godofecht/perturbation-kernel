@@ -146,4 +146,16 @@ jobs:
         # The Python crate is `publish = false`; only the core crate
         # goes to crates.io. `--no-verify` is deliberately not used: the
         # package is rebuilt from the archive before upload.
-        run: cargo publish --all-features
+        #
+        # crates.io uploads are immutable, so re-running a release for a
+        # version it already has should be a no-op rather than a red
+        # build. This mirrors `skip-existing` on the PyPI side.
+        run: |
+          VERSION=$(cargo metadata --no-deps --format-version 1 \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["packages"][0]["version"])')
+          if curl -sf "https://crates.io/api/v1/crates/perturbation-kernel/$VERSION" \
+               -H 'User-Agent: perturbation-kernel release workflow' >/dev/null; then
+            echo "::notice::crates.io already has $VERSION; nothing to publish."
+            exit 0
+          fi
+          cargo publish --all-features
