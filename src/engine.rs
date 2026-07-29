@@ -23,7 +23,7 @@ use rand::SeedableRng;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-use crate::config::{Backend, Config, Reduction};
+use crate::config::{Config, Reduction};
 use crate::forward::ForwardModel;
 use crate::invariance::Invariance;
 use crate::perturbation::Perturbation;
@@ -265,7 +265,7 @@ where
     F: ForwardModel<S, O> + Sync,
 {
     #[cfg(feature = "parallel")]
-    if cfg.n >= PARALLEL_MIN && cfg.backend != Backend::Scalar {
+    if cfg.n >= PARALLEL_MIN && cfg.backend != crate::config::Backend::Scalar {
         return (0..cfg.n)
             .into_par_iter()
             .map(|i| draw_one(base, fam, model, cfg.seed, i))

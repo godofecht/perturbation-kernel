@@ -24,7 +24,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::{Backend, Config};
+use crate::config::Config;
 use crate::engine::fork_rng;
 use crate::examples::{bistable, gaussian, markov};
 use crate::forward::ForwardModel;
@@ -301,11 +301,15 @@ impl Family {
 }
 
 /// `true` when the draw loop for `cfg` should use the thread pool.
+///
+/// Only reachable with the `parallel` feature on; without it there is no
+/// pool to dispatch to.
+#[cfg(feature = "parallel")]
 #[inline]
 fn threaded(cfg: &Config) -> bool {
     cfg!(feature = "parallel")
         && cfg.n >= crate::engine::PARALLEL_MIN
-        && cfg.backend != Backend::Scalar
+        && cfg.backend != crate::config::Backend::Scalar
 }
 
 /// Gaussian family, `N x d` ensemble in one row-major allocation.

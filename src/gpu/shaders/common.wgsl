@@ -92,14 +92,28 @@ fn stream_new(seed: U64, index: U64) -> Stream {
 }
 
 fn chacha_block(s: ptr<function, Stream>, counter: u32) {
+    // Every index into `x` and `w` below is a literal, deliberately.
+    //
+    // These are function-local arrays, which HLSL wants to keep in
+    // registers, and registers are not addressable. FXC -- the compiler
+    // wgpu's DX12 backend uses on Windows -- refuses a dynamically
+    // indexed write to one: "array reference cannot be used as an
+    // l-value; not natively addressable". Writing the loops out is the
+    // portable answer, and costs nothing since the trip counts are
+    // fixed anyway.
     var x: array<u32, 16>;
     x[0] = 0x61707865u;
     x[1] = 0x3320646eu;
     x[2] = 0x79622d32u;
     x[3] = 0x6b206574u;
-    for (var j = 0u; j < 8u; j = j + 1u) {
-        x[4u + j] = (*s).key[j];
-    }
+    x[4] = (*s).key[0];
+    x[5] = (*s).key[1];
+    x[6] = (*s).key[2];
+    x[7] = (*s).key[3];
+    x[8] = (*s).key[4];
+    x[9] = (*s).key[5];
+    x[10] = (*s).key[6];
+    x[11] = (*s).key[7];
     x[12] = counter;
     x[13] = 0u;
     x[14] = 0u;
@@ -150,9 +164,22 @@ fn chacha_block(s: ptr<function, Stream>, counter: u32) {
         w[9] = w[9] + w[14]; w[4] = rotl(w[4] ^ w[9], 7u);
     }
 
-    for (var j = 0u; j < 16u; j = j + 1u) {
-        (*s).block[j] = w[j] + x[j];
-    }
+    (*s).block[0] = w[0] + x[0];
+    (*s).block[1] = w[1] + x[1];
+    (*s).block[2] = w[2] + x[2];
+    (*s).block[3] = w[3] + x[3];
+    (*s).block[4] = w[4] + x[4];
+    (*s).block[5] = w[5] + x[5];
+    (*s).block[6] = w[6] + x[6];
+    (*s).block[7] = w[7] + x[7];
+    (*s).block[8] = w[8] + x[8];
+    (*s).block[9] = w[9] + x[9];
+    (*s).block[10] = w[10] + x[10];
+    (*s).block[11] = w[11] + x[11];
+    (*s).block[12] = w[12] + x[12];
+    (*s).block[13] = w[13] + x[13];
+    (*s).block[14] = w[14] + x[14];
+    (*s).block[15] = w[15] + x[15];
     (*s).block_index = counter;
     (*s).loaded = 1u;
 }
@@ -162,9 +189,28 @@ fn next_u32(s: ptr<function, Stream>) -> u32 {
     if ((*s).loaded == 0u || (*s).block_index != counter) {
         chacha_block(s, counter);
     }
-    let w = (*s).block[(*s).word % 16u];
+    // A dynamic *read* of a function-local array, which FXC handles by
+    // unrolling into a select chain. Written as an explicit chain so
+    // the cost is visible and the compiler has nothing to refuse.
+    let i = (*s).word % 16u;
+    var out = (*s).block[0];
+    if (i == 1u) { out = (*s).block[1]; }
+    else if (i == 2u) { out = (*s).block[2]; }
+    else if (i == 3u) { out = (*s).block[3]; }
+    else if (i == 4u) { out = (*s).block[4]; }
+    else if (i == 5u) { out = (*s).block[5]; }
+    else if (i == 6u) { out = (*s).block[6]; }
+    else if (i == 7u) { out = (*s).block[7]; }
+    else if (i == 8u) { out = (*s).block[8]; }
+    else if (i == 9u) { out = (*s).block[9]; }
+    else if (i == 10u) { out = (*s).block[10]; }
+    else if (i == 11u) { out = (*s).block[11]; }
+    else if (i == 12u) { out = (*s).block[12]; }
+    else if (i == 13u) { out = (*s).block[13]; }
+    else if (i == 14u) { out = (*s).block[14]; }
+    else if (i == 15u) { out = (*s).block[15]; }
     (*s).word = (*s).word + 1u;
-    return w;
+    return out;
 }
 
 // Uniform on [0, 1) with 24 bits of precision -- the most an f32
