@@ -5,6 +5,7 @@ Reproducible perturbation-kernel estimators with SIMD and GPU backends.
 [![CI](https://github.com/godofecht/perturbation-kernel/actions/workflows/ci.yml/badge.svg)](https://github.com/godofecht/perturbation-kernel/actions/workflows/ci.yml)
 [![Docs](https://github.com/godofecht/perturbation-kernel/actions/workflows/docs.yml/badge.svg)](https://godofecht.github.io/perturbation-kernel/)
 [![PyPI](https://img.shields.io/pypi/v/perturbation-kernel?logo=pypi&logoColor=white)](https://pypi.org/project/perturbation-kernel/)
+[![crates.io](https://img.shields.io/crates/v/perturbation-kernel?logo=rust&logoColor=white)](https://crates.io/crates/perturbation-kernel)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue?logo=python&logoColor=white)](https://pypi.org/project/perturbation-kernel/)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange?logo=rust&logoColor=white)](https://github.com/godofecht/perturbation-kernel/blob/main/Cargo.toml)
 [![License](https://img.shields.io/pypi/l/perturbation-kernel)](LICENSE)
