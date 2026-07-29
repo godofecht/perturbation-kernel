@@ -50,9 +50,10 @@ jobs:
         run: |
           cmake -S bindings/cpp -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
+      # ctest knows where the generator put the binary; single-config
+      # generators drop it in build/, multi-config in build/Release/.
       - name: Run the conformance test
-        shell: bash
-        run: ./build/test_bindings 2>/dev/null || ./build/Release/test_bindings.exe
+        run: ctest --test-dir build -C Release --output-on-failure
 
   zig:
     name: Zig (${{ matrix.os }})
@@ -107,8 +108,13 @@ jobs:
       - name: Run the conformance test
         shell: bash
         run: |
-          LIB=$(ls target/release/libperturbation_kernel.so \
-                   target/release/libperturbation_kernel.dylib 2>/dev/null | head -1)
+          # Only one of these exists per platform, and `ls` on a missing
+          # path is a non-zero exit that `set -e -o pipefail` turns into
+          # a failed step. Glob instead.
+          LIB=$(find target/release -maxdepth 1 \
+                  \( -name 'libperturbation_kernel.so' \
+                     -o -name 'libperturbation_kernel.dylib' \) | head -1)
+          test -n "$LIB" || { echo "::error::no shared library found"; exit 1; }
           echo "linking against $LIB"
           PK_LIBRARY="$PWD/$LIB" julia --project=bindings/julia \
             -e 'using Pkg; Pkg.test()'

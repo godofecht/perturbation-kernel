@@ -68,6 +68,9 @@ pub fn build(b: *std.Build) void {
             exe.linkSystemLibrary("pthread");
             exe.linkSystemLibrary("dl");
             exe.linkSystemLibrary("m");
+            // The Rust staticlib references the unwinder for panics.
+            // Zig's lld does not pull it in implicitly the way cc does.
+            exe.linkSystemLibrary("gcc_s");
         },
     }
 
