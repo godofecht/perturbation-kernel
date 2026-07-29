@@ -15,9 +15,10 @@ backend:
   compiled in at all.
 
 `tests/determinism.rs` and `tests/backends.rs` check this directly, and
-CI re-checks it on every push across four native OS/architecture
-combinations: Linux and Windows, each on x86-64 and aarch64. That
-covers both vector paths on real silicon, AVX2 and NEON.
+CI re-checks it on every push across six native OS/architecture
+combinations: Linux, macOS and Windows, each on x86-64 and aarch64.
+That covers both vector paths on real silicon, AVX2 and NEON, under
+three operating systems.
 
 ## How
 
