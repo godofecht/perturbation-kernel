@@ -20,11 +20,25 @@ set(PK_RUST_TARGET_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/../../target/release"
     CACHE PATH "Directory holding the compiled Rust static library")
 
-find_library(
-  PK_RUST_LIB
-  NAMES perturbation_kernel libperturbation_kernel
-  PATHS ${PK_RUST_TARGET_DIR}
-  NO_DEFAULT_PATH REQUIRED)
+# Name the static library explicitly rather than letting find_library
+# pick. cargo emits both a staticlib and a cdylib, and on MSVC the
+# cdylib's import library is `perturbation_kernel.dll.lib`, which
+# find_library happily matches. Linking that produces an executable
+# that needs the DLL at run time; with the DLL elsewhere, the process
+# blocks on the loader instead of failing, which reads as a hung test.
+if(WIN32)
+  set(PK_RUST_LIB "${PK_RUST_TARGET_DIR}/perturbation_kernel.lib")
+else()
+  set(PK_RUST_LIB "${PK_RUST_TARGET_DIR}/libperturbation_kernel.a")
+endif()
+
+if(NOT EXISTS "${PK_RUST_LIB}")
+  message(
+    FATAL_ERROR
+      "No static library at ${PK_RUST_LIB}.\n"
+      "Run `cargo build --release` first, or point -DPK_RUST_TARGET_DIR at "
+      "the directory holding it.")
+endif()
 message(STATUS "perturbation-kernel static library: ${PK_RUST_LIB}")
 
 target_link_libraries(perturbation_kernel INTERFACE ${PK_RUST_LIB})
