@@ -6,8 +6,8 @@ numbers keep tracking toolchain drift.
 
 - **Machine** AMD EPYC 7763 64-Core Processor, 4 cores
 - **Toolchain** rustc 1.97.1 (8bab26f4f 2026-07-14)
-- **Commit** `f67a39b74e05`
-- **Run** [30414197015](../../actions/runs/30414197015)
+- **Commit** `d4a308be8cff`
+- **Run** [30414466330](../../actions/runs/30414466330)
 
 A shared CI runner is a noisy place to measure. Treat these as
 order-of-magnitude guidance; the parallel figures in particular
@@ -24,12 +24,12 @@ Two changes stack here: the reduction no longer allocates a
 
 | | v1.0.0 | vectorised | speedup |
 |---|---|---|---|
-| `tree_sum`, N = 1,024 | 3.8 us | 398 ns | **9.58x** |
-| `sum_sq_dev`, N = 1,024 | 4.0 us | 415 ns | **9.61x** |
-| `tree_sum`, N = 65,536 | 64.0 us | 34.5 us | **1.86x** |
-| `sum_sq_dev`, N = 65,536 | 81.5 us | 22.3 us | **3.65x** |
-| `tree_sum`, N = 1,048,576 | 1.1 ms | 685.4 us | **1.56x** |
-| `sum_sq_dev`, N = 1,048,576 | 5.5 ms | 505.6 us | **10.78x** |
+| `tree_sum`, N = 1,024 | 3.6 us | 398 ns | **9.10x** |
+| `sum_sq_dev`, N = 1,024 | 3.8 us | 420 ns | **9.05x** |
+| `tree_sum`, N = 65,536 | 60.0 us | 31.8 us | **1.89x** |
+| `sum_sq_dev`, N = 65,536 | 74.0 us | 21.9 us | **3.38x** |
+| `tree_sum`, N = 1,048,576 | 979.8 us | 530.8 us | **1.85x** |
+| `sum_sq_dev`, N = 1,048,576 | 4.6 ms | 401.1 us | **11.54x** |
 
 ### Vectorisation alone
 
@@ -38,9 +38,9 @@ shape, so this is the vector unit and nothing else.
 
 | | scalar | vectorised | speedup |
 |---|---|---|---|
-| `tree_sum`, N = 1,024 | 867 ns | 398 ns | **2.18x** |
-| `tree_sum`, N = 65,536 | 57.5 us | 34.5 us | **1.67x** |
-| `tree_sum`, N = 1,048,576 | 978.4 us | 685.4 us | **1.43x** |
+| `tree_sum`, N = 1,024 | 846 ns | 398 ns | **2.12x** |
+| `tree_sum`, N = 65,536 | 54.6 us | 31.8 us | **1.72x** |
+| `tree_sum`, N = 1,048,576 | 886.5 us | 530.8 us | **1.67x** |
 
 ## Engine
 
@@ -50,12 +50,12 @@ Both produce identical bits.
 
 | | scalar | auto | speedup |
 |---|---|---|---|
-| `gaussian_d3`, N = 16,384 | 4.0 ms | 1.7 ms | **2.36x** |
-| `bistable`, N = 16,384 | 3.0 ms | 950.6 us | **3.13x** |
-| `markov`, N = 16,384 | 2.9 ms | 960.6 us | **3.03x** |
-| `gaussian_d3`, N = 262,144 | 62.9 ms | 25.7 ms | **2.44x** |
-| `bistable`, N = 262,144 | 47.1 ms | 15.3 ms | **3.07x** |
-| `markov`, N = 262,144 | 46.1 ms | 15.3 ms | **3.01x** |
+| `gaussian_d3`, N = 16,384 | 3.9 ms | 1.7 ms | **2.37x** |
+| `bistable`, N = 16,384 | 3.0 ms | 945.2 us | **3.15x** |
+| `markov`, N = 16,384 | 2.9 ms | 923.0 us | **3.15x** |
+| `gaussian_d3`, N = 262,144 | 62.3 ms | 24.2 ms | **2.57x** |
+| `bistable`, N = 262,144 | 47.0 ms | 15.0 ms | **3.14x** |
+| `markov`, N = 262,144 | 46.0 ms | 14.6 ms | **3.16x** |
 
 ## Flat storage
 
@@ -64,4 +64,4 @@ into one buffer instead of allocating per draw.
 
 | | trait path | `Family` path | speedup |
 |---|---|---|---|
-| `gaussian_d3`, N = 262,144 | 26.2 ms | 18.2 ms | **1.44x** |
+| `gaussian_d3`, N = 262,144 | 24.2 ms | 17.7 ms | **1.37x** |
