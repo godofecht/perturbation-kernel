@@ -42,13 +42,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # macOS rows are commented out to keep the runner mix cheap.
+        # Standard runners are free and unmetered on public
+        # repositories, macOS included, so this is a scheduling and
+        # queue-time choice rather than a billing one -- uncomment to
+        # restore. Release wheels are still built on macOS, so macOS
+        # users are unaffected.
         include:
           - { os: ubuntu-latest,    arch: x86-64 }
           - { os: ubuntu-24.04-arm, arch: aarch64 }
-          - { os: macos-latest,     arch: aarch64 }
-          - { os: macos-15-intel,   arch: x86-64 }
           - { os: windows-latest,   arch: x86-64 }
           - { os: windows-11-arm,   arch: aarch64 }
+          # - { os: macos-latest,   arch: aarch64 }
+          # - { os: macos-15-intel, arch: x86-64 }
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -121,13 +127,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # macOS rows are commented out to keep the runner mix cheap.
+        # Standard runners are free and unmetered on public
+        # repositories, macOS included, so this is a scheduling and
+        # queue-time choice rather than a billing one -- uncomment to
+        # restore. Release wheels are still built on macOS, so macOS
+        # users are unaffected.
         include:
           - { os: ubuntu-latest,    arch: x86-64 }
           - { os: ubuntu-24.04-arm, arch: aarch64 }
-          - { os: macos-latest,     arch: aarch64 }
-          - { os: macos-15-intel,   arch: x86-64 }
           - { os: windows-latest,   arch: x86-64 }
           - { os: windows-11-arm,   arch: aarch64 }
+          # - { os: macos-latest,   arch: aarch64 }
+          # - { os: macos-15-intel, arch: x86-64 }
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -174,13 +186,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-15-intel, windows-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
         python: ["3.9", "3.13"]
         include:
           - { os: ubuntu-latest,    arch: x86-64 }
           - { os: ubuntu-24.04-arm, arch: aarch64 }
-          - { os: macos-latest,     arch: aarch64 }
-          - { os: macos-15-intel,   arch: x86-64 }
           - { os: windows-latest,   arch: x86-64 }
     steps:
       - uses: actions/checkout@v4

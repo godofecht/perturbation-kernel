@@ -92,8 +92,9 @@ Measured by CI on AMD EPYC 7763 64-Core Processor (4 cores). Full tables in
 ## Bit-identity
 
 `GOLDEN.txt` holds 42 `Report.value` bit patterns produced by the
-original v1.0.0 implementation. CI regenerates and diffs them on Linux,
-macOS and Windows on every push:
+original v1.0.0 implementation. CI regenerates and diffs them on every
+push across four native OS/architecture combinations, Linux and Windows
+on both x86-64 and aarch64, under every feature combination:
 
 ```bash
 cargo run --release --example golden > golden.actual
