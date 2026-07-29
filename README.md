@@ -69,11 +69,13 @@ typescript     0.8802871704101562     3fec2b5000000000
 ```bash
 pip install perturbation-kernel          # Python
 cargo add perturbation-kernel            # Rust
-npm install perturbation-kernel          # TypeScript / wasm
 ```
 
-C++, Zig and Julia link the C ABI from `cargo build --release`; see
-`bindings/`.
+The other four are built from this repository rather than pulled from a
+registry. C++, Zig and Julia link the C ABI produced by
+`cargo build --release`; TypeScript builds a wasm module with
+`wasm-pack`. See `bindings/` for the per-language build and the
+conformance test each one ships.
 
 ## Backends
 

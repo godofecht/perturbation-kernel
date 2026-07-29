@@ -36,6 +36,7 @@ jobs:
   cpp:
     name: C++ (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -58,6 +59,7 @@ jobs:
   zig:
     name: Zig (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -92,6 +94,7 @@ jobs:
   julia:
     name: Julia (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -122,6 +125,7 @@ jobs:
   typescript:
     name: TypeScript / wasm (node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -152,6 +156,7 @@ jobs:
   agreement:
     name: all bindings agree
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

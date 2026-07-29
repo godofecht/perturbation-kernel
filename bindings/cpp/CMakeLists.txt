@@ -49,3 +49,6 @@ enable_testing()
 add_executable(test_bindings tests/test_bindings.cpp)
 target_link_libraries(test_bindings PRIVATE perturbation_kernel)
 add_test(NAME cpp_bindings COMMAND test_bindings)
+# A hung test is worse than a failing one: it burns a CI runner to the
+# job timeout and reports nothing. Fail it instead.
+set_tests_properties(cpp_bindings PROPERTIES TIMEOUT 300)
