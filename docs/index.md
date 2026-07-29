@@ -48,6 +48,7 @@ the headline theorems alongside it.
 |---|---|
 | **Rust crate** | The engine, three worked families, a C ABI, and the SIMD and GPU backends |
 | **Python package** | `pip install perturbation-kernel`, abi3 wheels for CPython 3.8+ |
+| **C++, Zig, Julia, TypeScript** | Four more surfaces on the same engine; see [Language bindings](bindings.md) |
 | **Lean 4 library** | The theorem statements, with the Gaussian-shift case fully proven |
 
 ## Three guarantees

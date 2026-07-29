@@ -63,6 +63,7 @@ nav:
       - Error bounds: error-bounds.md
       - Performance: performance.md
   - Reference:
+      - Language bindings: bindings.md
       - Python API: python-api.md
       - Rust API: rust-api.md
       - C API: c-api.md
