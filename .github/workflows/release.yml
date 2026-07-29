@@ -114,6 +114,10 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
+          # Re-running a release must not fail on files PyPI already
+          # has. Uploads are immutable, so a repeat is a no-op, not an
+          # error worth stopping the run for.
+          skip-existing: true
           # Omit this and the action falls back to trusted publishing,
           # which is the better long-term setup once a publisher is
           # configured at https://pypi.org/manage/account/publishing/
