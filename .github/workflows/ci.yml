@@ -169,9 +169,14 @@ jobs:
           python -m pip install maturin pytest
           maturin build --release --out dist
           python -m pip install --no-index --find-links dist perturbation-kernel
+      # Run from the repository root, not from `python/`. That
+      # directory contains the pure-Python half of the package, and with
+      # it as the working directory `import perturbation_kernel` picks
+      # up the source tree instead of the installed wheel -- and the
+      # source tree has no compiled extension in it, because the built
+      # `.so` is gitignored. Testing the wheel is the whole point.
       - name: Run the test suite
-        working-directory: python
-        run: python -m pytest tests -v
+        run: python -m pytest python/tests -v
 
   docs:
     name: rustdoc
