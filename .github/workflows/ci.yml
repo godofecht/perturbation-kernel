@@ -97,7 +97,7 @@ jobs:
           - rust: "1.85.0"
             label: default features
             args: "--lib"
-          - rust: "1.87.0"
+          - rust: "1.90.0"
             label: all features
             args: "--lib --all-features"
     steps:
