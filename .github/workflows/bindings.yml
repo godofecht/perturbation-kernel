@@ -136,8 +136,8 @@ jobs:
         run: cargo build --release
       - name: Install and run the conformance test
         run: |
-          R CMD INSTALL bindings/r
-          Rscript bindings/r/tests/smoke.R
+          PK_LIB="$PWD/target/release" PK_INC="$PWD/bindings/cpp/include" R CMD INSTALL bindings/r
+          LD_LIBRARY_PATH="$PWD/target/release${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" Rscript bindings/r/tests/smoke.R
 
   typescript:
     name: TypeScript / wasm (node ${{ matrix.node }})
