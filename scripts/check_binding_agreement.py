@@ -193,7 +193,7 @@ if shutil.which("Rscript"):
         env = {**__import__("os").environ}
         env["LD_LIBRARY_PATH"] = str(lib.parent) + ":" + env.get("LD_LIBRARY_PATH", "")
         env["DYLD_FALLBACK_LIBRARY_PATH"] = str(lib.parent) + ":" + env.get("DYLD_FALLBACK_LIBRARY_PATH", "")
-        subprocess.run(["R", "CMD", "INSTALL", "bindings/r"], check=True, cwd=ROOT, env=env,
+        env["PK_LIB"] = str(lib.parent)\n        env["PK_INC"] = str(ROOT / "bindings" / "cpp" / "include")\n        subprocess.run(["R", "CMD", "INSTALL", "bindings/r"], check=True, cwd=ROOT, env=env,
                        stdout=subprocess.DEVNULL)
         results["r"] = float(run([
             "Rscript", "-e",
