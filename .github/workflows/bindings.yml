@@ -1,6 +1,6 @@
 name: Bindings
 
-# Four language bindings, all on the same C ABI (except TypeScript,
+# Five non-Rust/Python bindings, all on the same C ABI (except TypeScript,
 # which goes through wasm). Each has a conformance test asserting the
 # *same* reference value the Rust and Python suites assert on, because
 # the thing that can break in a binding is not the arithmetic -- it is
@@ -106,6 +106,7 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: "1"
+      - uses: r-lib/actions/setup-r@v2
       - name: Build the shared library
         run: cargo build --release
       - name: Run the conformance test
@@ -121,6 +122,22 @@ jobs:
           echo "linking against $LIB"
           PK_LIBRARY="$PWD/$LIB" julia --project=bindings/julia \
             -e 'using Pkg; Pkg.test()'
+
+  r:
+    name: R / RStudio
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: r-lib/actions/setup-r@v2
+      - name: Build the shared library
+        run: cargo build --release
+      - name: Install and run the conformance test
+        run: |
+          R CMD INSTALL bindings/r
+          Rscript bindings/r/tests/smoke.R
 
   typescript:
     name: TypeScript / wasm (node ${{ matrix.node }})
