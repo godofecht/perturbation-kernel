@@ -1,0 +1,9 @@
+PK_LIB ?= ../../target/release
+PK_INC ?= ../cpp/include
+
+PKG_CPPFLAGS = -I$(PK_INC)
+PKG_LIBS = -L$(PK_LIB) -lperturbation_kernel
+
+ifeq ($(shell uname),Darwin)
+PKG_LIBS += -Wl,-rpath,$(PK_LIB)
+endif
