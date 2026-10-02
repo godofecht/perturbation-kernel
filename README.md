@@ -1,7 +1,7 @@
 # perturbation-kernel
 
 Perturbative stability estimation with a reproducibility guarantee at
-the bit level. Rust core, five language bindings.
+the bit level. Rust core, six language bindings.
 
 [![CI](https://github.com/godofecht/perturbation-kernel/actions/workflows/ci.yml/badge.svg)](https://github.com/godofecht/perturbation-kernel/actions/workflows/ci.yml)
 [![Docs](https://github.com/godofecht/perturbation-kernel/actions/workflows/docs.yml/badge.svg)](https://godofecht.github.io/perturbation-kernel/)
@@ -47,6 +47,7 @@ mathematics and the schema governs the wire formats.
 | **C / C++** · header-only C++20 wrapper | `bindings/cpp/` | C ABI |
 | **Zig** · `@cImport` module | `bindings/zig/` | C ABI |
 | **Julia** · `ccall` module | `bindings/julia/` | C ABI |
+| **R / RStudio** · `.Call` wrapper | `bindings/r/` | C ABI |
 | **TypeScript** · Node, Deno, browser | `bindings/ts/` | wasm32 |
 | **Lean 4 / Mathlib** · formalised statements | `lean/` | `lake build` green; 5 theorems stated, Gaussian-shift example fully proven, four headline theorems `sorry`'d at the statement layer |
 
@@ -72,7 +73,7 @@ cargo add perturbation-kernel            # Rust
 ```
 
 The other four are built from this repository rather than pulled from a
-registry. C++, Zig and Julia link the C ABI produced by
+registry. C++, Zig, Julia and R link the C ABI produced by
 `cargo build --release`; TypeScript builds a wasm module with
 `wasm-pack`. See `bindings/` for the per-language build and the
 conformance test each one ships.
