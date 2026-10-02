@@ -136,7 +136,7 @@ tightening `ε` by 10× costs 256× the compute.
 ## Other languages
 
 The same engine, the same bits, through the C ABI (and wasm for
-TypeScript): **Rust**, **C/C++**, **Zig**, **Julia**, **TypeScript**.
+TypeScript): **Rust**, **C/C++**, **Zig**, **Julia**, **R**, **TypeScript**.
 CI runs a cross-language agreement job that compares raw `f64` bit
 patterns across all of them rather than each against a constant.
 
