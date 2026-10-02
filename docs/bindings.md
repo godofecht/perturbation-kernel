@@ -144,7 +144,7 @@ wasm build for exactly that reason.
 
 ## Two bugs the bindings found
 
-Adding callers in four more languages surfaced two defects that Rust
+Adding callers in multiple languages surfaced two defects that Rust
 and Python had never exercised.
 
 **Null parameters were compared by strict JSON value identity.**
