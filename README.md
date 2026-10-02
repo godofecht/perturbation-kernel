@@ -72,7 +72,7 @@ pip install perturbation-kernel          # Python
 cargo add perturbation-kernel            # Rust
 ```
 
-The other four are built from this repository rather than pulled from a
+The other five are built from this repository rather than pulled from a
 registry. C++, Zig, Julia and R link the C ABI produced by
 `cargo build --release`; TypeScript builds a wasm module with
 `wasm-pack`. See `bindings/` for the per-language build and the
