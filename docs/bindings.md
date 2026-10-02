@@ -9,7 +9,7 @@ the other four are built from this repository.
 | Python | PyO3, abi3 wheels | `python/` |
 | C / C++ | C ABI, header-only C++20 | `bindings/cpp/` |
 | Zig | `@cImport` over the C ABI | `bindings/zig/` |
-| Julia | `ccall` over the C ABI | `bindings/julia/` |
+| Julia | `ccall` over the C ABI | `bindings/julia/` |\n| R / RStudio | `.Call` over the C ABI | `bindings/r/` |
 | TypeScript | wasm32 via `wasm-bindgen` | `bindings/ts/` |
 
 ## They return the same bits
@@ -38,7 +38,7 @@ decimal places.
 
 ## The ABI they share
 
-Four of the six go through one C function:
+Five of the seven go through one C function:
 
 ```c
 pk_report *pk_run_family(const char *family_json, const char *config_json,
@@ -116,7 +116,7 @@ PK_LIBRARY=$PWD/target/release/libperturbation_kernel.dylib \
 `PK_LIBRARY` points at the shared library; without it the module looks
 for `libperturbation_kernel` on the default search path.
 
-## TypeScript
+## R / RStudio\n\nThe R package is a thin `.Call` wrapper over the same C ABI and is usable directly from RStudio.\n\n```r\nlibrary(perturbationkernel)\nr <- pk_run(pk_markov(k = 5L, theta_max = 0.3),\n            pk_config(n = 262144L, seed = 20260610L))\nr$value\n```\n\n```bash\ncargo build --release\nR CMD INSTALL bindings/r\nRscript bindings/r/tests/smoke.R\n```\n\n## TypeScript
 
 Compiled to `wasm32-unknown-unknown`, so it runs in Node, Deno and the
 browser with no native toolchain on the consumer's machine. Ships
@@ -144,7 +144,7 @@ wasm build for exactly that reason.
 
 ## Two bugs the bindings found
 
-Adding callers in four more languages surfaced two defects that Rust
+Adding callers in multiple languages surfaced two defects that Rust
 and Python had never exercised.
 
 **Null parameters were compared by strict JSON value identity.**

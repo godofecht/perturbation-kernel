@@ -182,6 +182,29 @@ else:
     skipped.append("julia (not installed)")
 
 
+# ---- R --------------------------------------------------------------
+if shutil.which("Rscript"):
+    lib = next(
+        (q for q in (ROOT / "target" / "release").glob("libperturbation_kernel.*")
+         if q.suffix in {".so", ".dylib"}),
+        None,
+    )
+    if lib:
+        env = {**__import__("os").environ}
+        env["LD_LIBRARY_PATH"] = str(lib.parent) + ":" + env.get("LD_LIBRARY_PATH", "")
+        env["DYLD_FALLBACK_LIBRARY_PATH"] = str(lib.parent) + ":" + env.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+        subprocess.run(["R", "CMD", "INSTALL", "bindings/r"], check=True, cwd=ROOT, env=env,
+                       stdout=subprocess.DEVNULL)
+        results["r"] = float(run([
+            "Rscript", "-e",
+            f'library(perturbationkernel);cat(pk_run(pk_markov(k=5L,theta_max=0.3),pk_config(n={N}L,seed={SEED}L))$value)'
+        ], env=env))
+    else:
+        skipped.append("r (no shared library)")
+else:
+    skipped.append("r (not installed)")
+
+
 # ---- Zig ------------------------------------------------------------
 if shutil.which("zig"):
     skipped.append("zig (covered by its own conformance job)")
