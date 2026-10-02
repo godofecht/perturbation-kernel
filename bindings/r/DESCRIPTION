@@ -2,7 +2,7 @@ Package: perturbationkernel
 Type: Package
 Title: R Binding for perturbation-kernel
 Version: 0.1.0
-Authors@R: person("Abhishek", "Shivakumar", role = c("aut", "cre"))
+Authors@R: person("Abhishek", "Shivakumar", email = "abhishek.shivakumar@gmail.com", role = c("aut", "cre"))
 Description: R and RStudio binding for the perturbation-kernel C ABI. The
     package is a thin wrapper around the Rust engine and preserves its
     deterministic execution and bit-identity guarantees.
