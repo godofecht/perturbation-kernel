@@ -13,12 +13,14 @@ on:
       - "src/**"
       - "bindings/**"
       - "Cargo.toml"
+      - "scripts/check_binding_agreement.py"
       - ".github/workflows/bindings.yml"
   pull_request:
     paths:
       - "src/**"
       - "bindings/**"
       - "Cargo.toml"
+      - "scripts/check_binding_agreement.py"
       - ".github/workflows/bindings.yml"
   workflow_dispatch:
 
@@ -206,5 +208,7 @@ jobs:
           maturin build --release -m python/Cargo.toml --out dist
           python -m pip install --no-index --find-links dist perturbation-kernel
 
+      - name: Check binding agreement runner syntax
+        run: python3 -m py_compile scripts/check_binding_agreement.py
       - name: Collect one value from every language
         run: python3 scripts/check_binding_agreement.py
