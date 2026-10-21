@@ -32,7 +32,7 @@ variable {S : Type u} {Θ : Type v} {O : Type w}
     [MeasurableSpace O] [TopologicalSpace O] [OpensMeasurableSpace O]
     [PseudoMetricSpace S] [PseudoMetricSpace Θ] [PseudoMetricSpace O]
 
-/-- Local placeholder for the Wasserstein-1 distance between two measures
+/-- Uninterpreted placeholder for the Wasserstein-1 distance between two measures
 on a metric space. **Gap:** replace with the canonical Mathlib definition
 when one exists (currently only sketched in PRs against `Mathlib/
 MeasureTheory/Distance/Wasserstein` upstream). -/
@@ -66,7 +66,8 @@ values whose difference is bounded by `Λ · L · C · W₁(ρ, ρ')`.
 
 The hypothesis is exactly Assumption 5.1 of the paper. Proof: chain
 Assumption 5.1 + Lemma 5.2 (pushforward contracts `W₁` under Lipschitz `F`)
-+ Lemma 5.3 (mixing contracts `W₁`); statement-only here. -/
++ Lemma 5.3 (mixing contracts `W₁`); the transport inequality is supplied as an explicit hypothesis; this
+is a valid compositional bound, not a proof of the mixing contraction. -/
 theorem stability_second_order
     (K K' : PerturbationKernel S Θ O)
     (H  : StabilityHypotheses K)
@@ -77,9 +78,22 @@ theorem stability_second_order
     (_hSameInv : K.invariance = K'.invariance)
     (s : S)
     (hP  : ∀ s θ, IsProbabilityMeasure (K.family.apply s θ))
-    (hP' : ∀ s θ, IsProbabilityMeasure (K'.family.apply s θ)) :
+    (hP' : ∀ s θ, IsProbabilityMeasure (K'.family.apply s θ))
+    (hTransport :
+      (Wass1 (K.inducedObsProb s hP : Measure O)
+        (K'.inducedObsProb s hP' : Measure O)).toReal
+        ≤ H.L * H.C * (Wass1 K.family.rho K'.family.rho).toReal) :
     |K.invarianceValue s hP - K'.invarianceValue s hP'|
       ≤ H.Λ * H.L * H.C * (Wass1 K.family.rho K'.family.rho).toReal := by
-  sorry
+  change |K.invariance (K.inducedObsProb s hP) -
+    K'.invariance (K'.inducedObsProb s hP')| ≤ _
+  rw [← _hSameInv]
+  calc
+    _ ≤ H.Λ * (Wass1 (K.inducedObsProb s hP : Measure O)
+        (K'.inducedObsProb s hP' : Measure O)).toReal :=
+      H.invariance_w1_lipschitz _ _
+    _ ≤ H.Λ * (H.L * H.C * (Wass1 K.family.rho K'.family.rho).toReal) :=
+      mul_le_mul_of_nonneg_left hTransport H.Λ_nonneg
+    _ = _ := by ring
 
 end PerturbationKernel

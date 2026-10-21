@@ -17,7 +17,7 @@ Paper-to-Lean dictionary:
   * `inducedObsMeasure`     — `nu^P_s = F_* mu^P_s` of Def. 3.4.
   * `invarianceValue`       — `Phi(nu_s)`, the boxed object of Def. 3.6.
   * `wellDefined`           — Thm 4.2 (Borel measurability of the field
-                              `s ↦ Phi(nu_s)`); stated, `sorry`.
+                              `s ↦ Phi(nu_s)`); proved conditional on explicit measurability hypotheses.
 
 Mathlib namespaces used:
   * `MeasureTheory.Measure`              (measures on a measurable space)
@@ -159,14 +159,21 @@ def inducedStateMeasure (K : PerturbationKernel S Θ O) (s : S) : Measure S :=
 def inducedObsMeasure (K : PerturbationKernel S Θ O) (s : S) : Measure O :=
   (K.inducedStateMeasure s).map K.forward.toFun
 
-/-- The induced observation measure is a probability measure. Currently a
-statement-only stub — the proof requires `Kernel.bind`-style integration
-lemmas (Mathlib `MeasureTheory.Measure.bind` + Markov property of `P`). -/
+/-- The induced observation measure is a probability measure. The proof uses measurability of the evaluated kernel, the probability
+measure bind theorem, and preservation of probability under pushforward. -/
 theorem isProbabilityMeasure_inducedObsMeasure
     (K : PerturbationKernel S Θ O) (s : S)
     (hP : ∀ s θ, IsProbabilityMeasure (K.family.apply s θ)) :
     IsProbabilityMeasure (K.inducedObsMeasure s) := by
-  sorry
+  have h_meas : Measurable (fun θ : Θ => K.family.apply s θ) :=
+    K.family.toKernel.measurable'.comp (measurable_const.prodMk measurable_id)
+  have h_state : IsProbabilityMeasure (K.inducedStateMeasure s) := by
+    letI : IsProbabilityMeasure K.family.rho := K.family.rho_isProb
+    exact isProbabilityMeasure_bind h_meas.aemeasurable
+      (Filter.Eventually.of_forall (fun θ => hP s θ))
+  change IsProbabilityMeasure ((K.inducedStateMeasure s).map K.forward.toFun)
+  exact (Measure.isProbabilityMeasure_map_iff
+    (K.forward.measurable.aemeasurable)).2 h_state
 
 /-- The induced observation measure packaged as a `ProbabilityMeasure`. -/
 def inducedObsProb (K : PerturbationKernel S Θ O) (s : S)
@@ -186,15 +193,16 @@ The induced measures are Borel-measurable functions of the base state, so
 the invariance value defines a measurable field `s ↦ Φ(ν_s)` over `S`. -/
 
 /-- **Theorem 4.2 (Well-definedness).** Under the regularity hypotheses
-(R1)–(R3) of Paper §4, the map `s ↦ Φ(ν_s)` is Borel measurable. Proof is
-the Fubini-for-kernels + continuous-mapping argument from the paper;
-statement-only here. -/
+(R1)–(R3) of Paper §4, the map `s ↦ Φ(ν_s)` is Borel measurable. The proof composes the measurability certificates for the induced
+probability-measure field and the functional. Deriving the former from
+primitive kernel regularity remains a separate analytic obligation. -/
 theorem wellDefined (K : PerturbationKernel S Θ O)
     [TopologicalSpace S] [BorelSpace S]
     (hP : ∀ s θ, IsProbabilityMeasure (K.family.apply s θ))
-    (_hΦ_meas : True) :
+    (hν_meas : Measurable (fun s : S => K.inducedObsProb s hP))
+    (hΦ_meas : Measurable K.invariance.toFun) :
     Measurable (fun s : S => K.invarianceValue s hP) := by
-  sorry
+  exact hΦ_meas.comp hν_meas
 
 end PerturbationKernel
 end PerturbationKernel

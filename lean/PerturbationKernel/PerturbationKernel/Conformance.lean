@@ -7,7 +7,8 @@ computes the plug-in estimator `Φ̂_N(s)`, and therefore inherits the
 consistency, sample-complexity, and stability theorems.
 
 This file stages the conformance predicate as a `structure` and states
-Thm 8.2 as a theorem about that structure. Body: `sorry`.
+Thm 8.2 as a theorem about that structure. The implementation-to-estimator equality and the estimator's certified
+error decomposition are now explicit proof obligations.
 -/
 import PerturbationKernel.Basic
 import PerturbationKernel.Stability
@@ -86,7 +87,9 @@ plug-in estimator `Φ̂_N(s)`, hence inherits:
 
 This statement captures (i)–(iv) abstractly: the engine value coincides with
 a plug-in deviation that is bounded by the sample-complexity theorem.
-Body: `sorry`. -/
+Its statement is only as strong as the supplied engine-equivalence and
+error certificates. Strong consistency and cross-platform bit identity
+are **not** formally proved by this result. -/
 theorem governance
     [PseudoMetricSpace S] [PseudoMetricSpace Θ] [PseudoMetricSpace O]
     (I : ConformingImpl S Θ O)
@@ -96,10 +99,19 @@ theorem governance
     (ε η : ℝ) (hε_pos : 0 < ε) (hη_pos : 0 < η) (hη_lt : η < 1)
     (d_obs : ℕ)
     (hN_stoch : stochasticFloor H.Λ D ε η ≤ I.sampleSize)
-    (hN_bias  : biasFloor d_obs ε ≤ I.sampleSize) :
+    (hN_bias  : biasFloor d_obs ε ≤ I.sampleSize)
+    (hEngine : I.engineValue s =
+      plugInDeviation I.toKernel s I.sampleSize ε)
+    (hErrorSplit : ∃ bias fluctuation : ℝ,
+      plugInDeviation I.toKernel s I.sampleSize ε = bias + fluctuation ∧
+      |bias| ≤ ε / 2 ∧ |fluctuation| ≤ ε / 2) :
     |I.engineValue s - 0| ≤ ε ∧
-    -- (Symbolic) "engineValue = plug-in estimator on (s, sampleSize)":
-    I.engineValue s = I.engineValue s := by
-  sorry
+    I.engineValue s = plugInDeviation I.toKernel s I.sampleSize ε := by
+  have hBound := sampleComplexity_plugIn I.toKernel H s D hD_nonneg
+    True.intro ε η hε_pos hη_pos hη_lt d_obs I.sampleSize
+    hN_stoch hN_bias hErrorSplit
+  constructor
+  · simpa only [hEngine, sub_zero] using hBound
+  · exact hEngine
 
 end PerturbationKernel

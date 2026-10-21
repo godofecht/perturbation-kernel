@@ -17,7 +17,7 @@ lake update     # fetch Mathlib (slow first time)
 lake build
 ```
 
-Toolchain: `leanprover/lean4:v4.30.0-rc2` (see `lean-toolchain`).
+Toolchain: `leanprover/lean4:v4.31.0-rc2` (see `lean-toolchain`).
 
 ## Module layout
 
@@ -28,6 +28,7 @@ PerturbationKernel/Stability.lean      # §5:  Thm 5.4 statement
 PerturbationKernel/SampleComplexity.lean # §7: Thm 7.3 statement
 PerturbationKernel/Conformance.lean    # §8:  Def 8.1 + Thm 8.2
 PerturbationKernel/Examples.lean       # Gaussian shift on ℝ
+PerturbationKernel/ResearchExamples.lean # exact finite-state sensitivity
 ```
 
 ## What is proved vs what is stated
@@ -41,11 +42,11 @@ PerturbationKernel/Examples.lean       # Gaussian shift on ℝ
 | Def. 3.3 (`μ_s`)      | `PerturbationKernel.inducedStateMeasure`              | defined        |
 | Def. 3.4 (`ν_s`)      | `PerturbationKernel.inducedObsMeasure`                | defined        |
 | Def. 3.6 (`Φ(ν_s)`)   | `PerturbationKernel.invarianceValue`                  | defined        |
-| Thm 4.2               | `PerturbationKernel.wellDefined`                      | stated, `sorry`|
-| Thm 5.4               | `PerturbationKernel.stability_second_order`           | stated, `sorry`|
-| Thm 7.3(c)            | `PerturbationKernel.sampleComplexity_plugIn`          | stated, `sorry`|
+| Thm 4.2               | `PerturbationKernel.wellDefined`                      | proved, conditional on induced-measure and functional measurability |
+| Thm 5.4               | `PerturbationKernel.stability_second_order`           | proved conditional on an explicit transport-contraction bound |
+| Thm 7.3(c)            | `PerturbationKernel.sampleComplexity_plugIn`          | proved conditional on bounded bias and stochastic deviations |
 | Def. 8.1              | `PerturbationKernel.ConformingImpl`                   | defined        |
-| Thm 8.2               | `PerturbationKernel.governance`                       | stated, `sorry`|
+| Thm 8.2               | `PerturbationKernel.governance`                       | proved conditional on engine correspondence and error certificates |
 | Gaussian-shift C2     | `PerturbationKernel.Examples.gaussianShift_apply_null`| **proved**     |
 | Gaussian-shift Dirac  | `PerturbationKernel.Examples.gaussianShift_apply_eq_dirac` | **proved** |
 
@@ -85,3 +86,24 @@ it. When Mathlib lands a canonical Wasserstein-1 distance (in
 4. Sharpen `Examples.lean` to a genuine Gaussian-shift family with
    `rho := normal 0 σ²` once `Mathlib.Probability.Distributions.Gaussian`
    is in scope.
+
+## The formalisation boundary
+
+The Lean project contains **no admitted theorem bodies**. However, proving an
+implication from explicit hypotheses is different from proving the hypotheses
+for every perturbation family. In particular, `Wass1` is still an opaque
+placeholder, `plugInDeviation` is not yet an empirical-measure construction,
+and `ConformingImpl.engineValue` is not yet a semantics of the Rust engine.
+Therefore the current stability/sample-complexity/governance theorems do not
+establish their respective claims for arbitrary implementations. Their
+transport-contraction, concentration, and implementation-correctness
+assumptions are exposed in theorem signatures rather than silently assumed.
+
+The new `ResearchExamples.lean` proves an independent, concrete mathematical
+example: for uniformly mixed labels, expected survival changes linearly with
+the maximum perturbation intensity. The Python implementation in
+`python/examples/06_adaptive_research_sweep.py` measures how adaptive
+search saves kernel evaluations on this exact model.
+
+CI runs the Lean build and an axiom audit, and rejects `sorry` or `admit`
+proof bodies. Any remaining analytic bridge must be formalised separately.

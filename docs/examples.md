@@ -194,3 +194,59 @@ cargo run --release --example golden
 Prints the 42 `Report.value` bit patterns that CI diffs against
 `GOLDEN.txt` on every platform. This is the check that keeps every
 optimisation in the crate honest.
+
+### 06. How can a robustness sweep avoid unnecessary experiments?
+
+```bash
+python python/examples/06_adaptive_research_sweep.py
+```
+
+In a five-label perturbation model, the probability that a label survives
+uniform-intensity relabelling has the closed form
+
+```text
+p_survive(theta_max) = 1 - theta_max * (1 - 1/5) / 2
+```
+
+We seek the intensity where the survival probability falls to 0.8. The
+population answer is exactly 0.5. The example evaluates the actual Rust
+Monte Carlo kernel through its Python wheel using two search strategies:
+a full 257-point grid, and eight midpoint evaluations bracketed by two
+endpoint checks (10 evaluations total). Both estimates must be within
+0.04 intensity units of the exact solution or the program exits nonzero.
+
+The adaptive scheme avoids 247 out of 257 kernel evaluations, a **25.7×
+reduction in evaluation count** at the same grid resolution. It also times
+both methods on the runner and reports the *observed* runtime ratio, which
+is intentionally not asserted to be universal. This is a model-evaluation
+acceleration rather than a new asymptotic sampling bound. The fixed seed
+provides reproducible comparisons, but a fixed-seed bisection is not a
+confidence sequence and the example does not claim a sequentially valid
+confidence interval.
+
+The corresponding deterministic population sensitivity identity and
+monotonicity argument are proved in
+`lean/PerturbationKernel/PerturbationKernel/ResearchExamples.lean`.
+
+### 07. Trace the estimator from a state distribution to a statistical result
+
+```bash
+python python/examples/07_kernel_mechanics.py
+```
+
+The concrete model has five discrete states, a perturbation intensity
+`theta` drawn uniformly from `[0, theta_max]`, and a random relabelling
+step that returns the original state with probability
+`1 - theta + theta / 5`. The forward model maps each new state to a
+binary indicator of the original label, and the invariance functional
+averages those indicators. Integration over the intensity distribution
+yields the exact population value
+`1 - theta_max * (1 - 1/5) / 2`.
+
+The script prints each intermediate mathematical quantity, evaluates the
+actual kernel for four intensities, checks the Monte Carlo output against
+the exact population value, proves the zero-noise identity computationally,
+and repeats the same seeded calls to check reproducibility. It runs in
+GitHub Actions on the installed Python wheel. The Lean theorem
+`ResearchExamples.survival_difference` proves its exact population
+sensitivity algebraically.

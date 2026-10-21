@@ -1,0 +1,44 @@
+name: Lean proof verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    name: Lean 4 / Mathlib proofs and axiom audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject admitted proof bodies
+        shell: bash
+        run: |
+          if grep -R -nE '^[[:space:]]*(sorry|admit)([[:space:]]|$)' lean/PerturbationKernel --include='*.lean'; then
+            echo "::error::Admitted Lean proof detected"
+            exit 1
+          fi
+      # lean-action requires a pre-existing Lake manifest. Generate it
+      # with the pinned toolchain before delegating the build and audit.
+      - name: Install elan for dependency resolution
+        shell: bash
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve Mathlib
+        working-directory: lean/PerturbationKernel
+        run: lake update
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean/PerturbationKernel
+          build: 'true'
+          test: 'false'
+          axiom-audit: 'true'

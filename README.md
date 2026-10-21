@@ -49,7 +49,7 @@ mathematics and the schema governs the wire formats.
 | **Julia** · `ccall` module | `bindings/julia/` | C ABI |
 | **R / RStudio** · `.Call` wrapper | `bindings/r/` | C ABI |
 | **TypeScript** · Node, Deno, browser | `bindings/ts/` | wasm32 |
-| **Lean 4 / Mathlib** · formalised statements | `lean/` | `lake build` green; 5 theorems stated, Gaussian-shift example fully proven, four headline theorems `sorry`'d at the statement layer |
+| **Lean 4 / Mathlib** · formal proof interfaces | `lean/` | probability-measure preservation, finite-state sensitivity, and conditional analytical bounds; dedicated CI build and axiom audit |
 
 Every binding routes through the same engine. CI runs a cross-language
 agreement job comparing raw `f64` bit patterns rather than each binding
@@ -181,9 +181,25 @@ python python/examples/02_where_does_it_tip.py
 python python/examples/03_how_many_draws.py
 python python/examples/04_gpu_sweep.py
 python python/examples/05_reproducibility_receipt.py
+python python/examples/06_adaptive_research_sweep.py
+python python/examples/07_kernel_mechanics.py
 
 cargo run --release --example custom_family
 ```
+
+The adaptive research example compares a full 257-point robustness scan with a
+10-evaluation bisection and checks both against a known population threshold.
+It measures wall time rather than asserting a hardware-independent speedup;
+the deterministic acceleration is the reduction in model evaluations.
+
+**Formal verification boundary.** No Lean proof body uses `sorry`. The
+probability-preservation and finite-state sensitivity proofs establish real
+properties. However, the Wasserstein object and plug-in deviation still use
+opaque specifications; the stability, sample-complexity, and governance
+results require explicit transport, concentration, and engine-equivalence
+certificates. These are *conditional composition theorems*, not yet
+formal proofs that every implementation satisfies the paper's full claims.
+The Lean CI job builds the library and audits proof dependencies.
 
 Output and commentary for all of them is in
 [Examples](https://godofecht.github.io/perturbation-kernel/examples/).

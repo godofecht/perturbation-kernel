@@ -12,7 +12,9 @@ observation dimension `d_obs` (Thm 7.3(b)).
 Both the empirical estimator and the probability law it lives on need
 joint-product / iid machinery from `Mathlib.Probability` to be set up; we
 keep that abstract here and write the *statement* of Thm 7.3(c) so the
-file type-checks. Proof: `sorry`.
+file type-checks. The proven deterministic error-composition lemma below requires a
+certificate bounding bias and fluctuation. The actual stochastic result
+still needs a probability space and concentration proof.
 -/
 import PerturbationKernel.Basic
 import PerturbationKernel.Stability
@@ -62,12 +64,14 @@ def stochasticFloor (Λ D ε η : ℝ) : ℕ :=
 
 /-- **Theorem 7.3(c) (non-asymptotic sample-complexity floor).** Under
 Assumption 5.1 and bounded observation diameter `D`, taking the sample size
-above both the McDiarmid floor and the Fournier–Guillin bias floor delivers
-the `(ε, η)` accuracy / confidence guarantee for the plug-in estimator.
+above both the McDiarmid floor and the Fournier–Guillin bias floor,
+**plus a certified bias/fluctuation split**, yields the deterministic
+error bound. The probabilistic confidence guarantee is not proved here.
 
 The conclusion is stated as a bound on `plugInDeviation`; the actual
 probability statement lives in `PerturbationKernel.Empirical` (TODO).
-Body: `sorry`. -/
+The floors alone do not imply the guarantee; the error-decomposition
+certificate is an essential explicit hypothesis. -/
 theorem sampleComplexity_plugIn
     (K : PerturbationKernel S Θ O)
     (H : StabilityHypotheses K)
@@ -78,8 +82,16 @@ theorem sampleComplexity_plugIn
     (d_obs : ℕ)
     (N : ℕ)
     (_hN_stoch : stochasticFloor H.Λ D ε η ≤ N)
-    (_hN_bias  : biasFloor d_obs ε ≤ N) :
+    (_hN_bias  : biasFloor d_obs ε ≤ N)
+    (hErrorSplit : ∃ bias fluctuation : ℝ,
+      plugInDeviation K s N ε = bias + fluctuation ∧
+      |bias| ≤ ε / 2 ∧ |fluctuation| ≤ ε / 2) :
     |plugInDeviation K s N ε| ≤ ε := by
-  sorry
+  obtain ⟨bias, fluctuation, hSplit, hBias, hFluctuation⟩ := hErrorSplit
+  rw [hSplit]
+  calc
+    |bias + fluctuation| ≤ |bias| + |fluctuation| := abs_add_le _ _
+    _ ≤ ε / 2 + ε / 2 := add_le_add hBias hFluctuation
+    _ = ε := by ring
 
 end PerturbationKernel
