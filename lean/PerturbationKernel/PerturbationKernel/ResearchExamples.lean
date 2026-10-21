@@ -10,6 +10,8 @@ sensitivity of this model, not a Monte Carlo concentration theorem.
 import PerturbationKernel.Basic
 import Mathlib.Tactic
 
+noncomputable section
+
 namespace PerturbationKernel
 namespace ResearchExamples
 
