@@ -12,3 +12,5 @@ import PerturbationKernel.SampleComplexity
 import PerturbationKernel.Conformance
 import PerturbationKernel.Examples
 import PerturbationKernel.NHSTCritique
+
+import PerturbationKernel.ResearchExamples
