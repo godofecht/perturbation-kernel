@@ -2,9 +2,13 @@ name: Lean proof verification
 
 on:
   push:
-    branches: [main, proofs-and-research-demonstrations]
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
