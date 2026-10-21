@@ -22,6 +22,16 @@ jobs:
             echo "::error::Admitted Lean proof detected"
             exit 1
           fi
+      # lean-action requires a pre-existing Lake manifest. Generate it
+      # with the pinned toolchain before delegating the build and audit.
+      - name: Install elan for dependency resolution
+        shell: bash
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve Mathlib
+        working-directory: lean/PerturbationKernel
+        run: lake update
       - uses: leanprover/lean-action@v1
         with:
           lake-package-directory: lean/PerturbationKernel
