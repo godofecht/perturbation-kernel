@@ -86,3 +86,24 @@ it. When Mathlib lands a canonical Wasserstein-1 distance (in
 4. Sharpen `Examples.lean` to a genuine Gaussian-shift family with
    `rho := normal 0 σ²` once `Mathlib.Probability.Distributions.Gaussian`
    is in scope.
+
+## The formalisation boundary
+
+The Lean project contains **no admitted theorem bodies**. However, proving an
+implication from explicit hypotheses is different from proving the hypotheses
+for every perturbation family. In particular, `Wass1` is still an opaque
+placeholder, `plugInDeviation` is not yet an empirical-measure construction,
+and `ConformingImpl.engineValue` is not yet a semantics of the Rust engine.
+Therefore the current stability/sample-complexity/governance theorems do not
+establish their respective claims for arbitrary implementations. Their
+transport-contraction, concentration, and implementation-correctness
+assumptions are exposed in theorem signatures rather than silently assumed.
+
+The new `ResearchExamples.lean` proves an independent, concrete mathematical
+example: for uniformly mixed labels, expected survival changes linearly with
+the maximum perturbation intensity. The Python implementation in
+`python/examples/06_adaptive_research_sweep.py` measures how adaptive
+search saves kernel evaluations on this exact model.
+
+CI runs the Lean build and an axiom audit, and rejects `sorry` or `admit`
+proof bodies. Any remaining analytic bridge must be formalised separately.
