@@ -227,3 +227,26 @@ confidence interval.
 The corresponding deterministic population sensitivity identity and
 monotonicity argument are proved in
 `lean/PerturbationKernel/PerturbationKernel/ResearchExamples.lean`.
+
+### 07. Trace the estimator from a state distribution to a statistical result
+
+```bash
+python python/examples/07_kernel_mechanics.py
+```
+
+The concrete model has five discrete states, a perturbation intensity
+`theta` drawn uniformly from `[0, theta_max]`, and a random relabelling
+step that returns the original state with probability
+`1 - theta + theta / 5`. The forward model maps each new state to a
+binary indicator of the original label, and the invariance functional
+averages those indicators. Integration over the intensity distribution
+yields the exact population value
+`1 - theta_max * (1 - 1/5) / 2`.
+
+The script prints each intermediate mathematical quantity, evaluates the
+actual kernel for four intensities, checks the Monte Carlo output against
+the exact population value, proves the zero-noise identity computationally,
+and repeats the same seeded calls to check reproducibility. It runs in
+GitHub Actions on the installed Python wheel. The Lean theorem
+`ResearchExamples.survival_difference` proves its exact population
+sensitivity algebraically.
