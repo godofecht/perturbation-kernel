@@ -1,0 +1,30 @@
+name: Lean proof verification
+
+on:
+  push:
+    branches: [main, proofs-and-research-demonstrations]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    name: Lean 4 / Mathlib proofs and axiom audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject admitted proof bodies
+        shell: bash
+        run: |
+          if grep -R -nE '^[[:space:]]*(sorry|admit)([[:space:]]|$)' lean/PerturbationKernel --include='*.lean'; then
+            echo "::error::Admitted Lean proof detected"
+            exit 1
+          fi
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean/PerturbationKernel
+          build: 'true'
+          test: 'false'
+          axiom-audit: 'true'
