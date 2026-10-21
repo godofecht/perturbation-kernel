@@ -171,9 +171,9 @@ theorem isProbabilityMeasure_inducedObsMeasure
     letI : IsProbabilityMeasure K.family.rho := K.family.rho_isProb
     exact isProbabilityMeasure_bind h_meas.aemeasurable
       (Filter.Eventually.of_forall (fun θ => hP s θ))
-  letI : IsProbabilityMeasure (K.inducedStateMeasure s) := h_state
   change IsProbabilityMeasure ((K.inducedStateMeasure s).map K.forward.toFun)
-  infer_instance
+  exact (Measure.isProbabilityMeasure_map_iff
+    (K.forward.measurable.aemeasurable)).2 h_state
 
 /-- The induced observation measure packaged as a `ProbabilityMeasure`. -/
 def inducedObsProb (K : PerturbationKernel S Θ O) (s : S)
