@@ -194,3 +194,36 @@ cargo run --release --example golden
 Prints the 42 `Report.value` bit patterns that CI diffs against
 `GOLDEN.txt` on every platform. This is the check that keeps every
 optimisation in the crate honest.
+
+### 06. How can a robustness sweep avoid unnecessary experiments?
+
+```bash
+python python/examples/06_adaptive_research_sweep.py
+```
+
+In a five-label perturbation model, the probability that a label survives
+uniform-intensity relabelling has the closed form
+
+```text
+p_survive(theta_max) = 1 - theta_max * (1 - 1/5) / 2
+```
+
+We seek the intensity where the survival probability falls to 0.8. The
+population answer is exactly 0.5. The example evaluates the actual Rust
+Monte Carlo kernel through its Python wheel using two search strategies:
+a full 257-point grid, and eight midpoint evaluations bracketed by two
+endpoint checks (10 evaluations total). Both estimates must be within
+0.04 intensity units of the exact solution or the program exits nonzero.
+
+The adaptive scheme avoids 247 out of 257 kernel evaluations, a **25.7×
+reduction in evaluation count** at the same grid resolution. It also times
+both methods on the runner and reports the *observed* runtime ratio, which
+is intentionally not asserted to be universal. This is a model-evaluation
+acceleration rather than a new asymptotic sampling bound. The fixed seed
+provides reproducible comparisons, but a fixed-seed bisection is not a
+confidence sequence and the example does not claim a sequentially valid
+confidence interval.
+
+The corresponding deterministic population sensitivity identity and
+monotonicity argument are proved in
+`lean/PerturbationKernel/PerturbationKernel/ResearchExamples.lean`.
