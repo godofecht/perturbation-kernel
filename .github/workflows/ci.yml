@@ -204,6 +204,8 @@ jobs:
       # `.so` is gitignored. Testing the wheel is the whole point.
       - name: Run the test suite
         run: python -m pytest python/tests -v
+      - name: Run adaptive statistical research demonstration
+        run: python python/examples/06_adaptive_research_sweep.py
 
   docs:
     name: rustdoc
