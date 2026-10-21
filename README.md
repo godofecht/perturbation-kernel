@@ -182,6 +182,7 @@ python python/examples/03_how_many_draws.py
 python python/examples/04_gpu_sweep.py
 python python/examples/05_reproducibility_receipt.py
 python python/examples/06_adaptive_research_sweep.py
+python python/examples/07_kernel_mechanics.py
 
 cargo run --release --example custom_family
 ```
