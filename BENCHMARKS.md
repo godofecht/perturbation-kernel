@@ -4,10 +4,10 @@ Measured by CI, not by hand. Regenerated on every push that
 touches `src/`, `benches/` or `Cargo.toml`, and monthly so the
 numbers keep tracking toolchain drift.
 
-- **Machine** AMD EPYC 7763 64-Core Processor, 4 cores
-- **Toolchain** rustc 1.98.1 (48a229cea 2026-09-01)
-- **Commit** `5a4661151a6d`
-- **Run** [36851731783](../../actions/runs/36851731783)
+- **Machine** INTEL(R) XEON(R) PLATINUM 8573C, 4 cores
+- **Toolchain** rustc 1.99.1 (58cf8f9c3 2026-10-13)
+- **Commit** `59921f6a9a0a`
+- **Run** [41300755462](../../actions/runs/41300755462)
 
 A shared CI runner is a noisy place to measure. Treat these as
 order-of-magnitude guidance; the parallel figures in particular
@@ -24,12 +24,12 @@ Two changes stack here: the reduction no longer allocates a
 
 | | v1.0.0 | vectorised | speedup |
 |---|---|---|---|
-| `tree_sum`, N = 1,024 | 3.6 us | 399 ns | **9.11x** |
-| `sum_sq_dev`, N = 1,024 | 3.8 us | 415 ns | **9.17x** |
-| `tree_sum`, N = 65,536 | 61.0 us | 32.4 us | **1.88x** |
-| `sum_sq_dev`, N = 65,536 | 74.6 us | 22.3 us | **3.35x** |
-| `tree_sum`, N = 1,048,576 | 1.0 ms | 545.4 us | **1.91x** |
-| `sum_sq_dev`, N = 1,048,576 | 4.9 ms | 409.9 us | **11.94x** |
+| `tree_sum`, N = 1,024 | 988 ns | 337 ns | **2.93x** |
+| `sum_sq_dev`, N = 1,024 | 1.2 us | 314 ns | **3.68x** |
+| `tree_sum`, N = 65,536 | 80.3 us | 30.7 us | **2.61x** |
+| `sum_sq_dev`, N = 65,536 | 96.9 us | 21.5 us | **4.50x** |
+| `tree_sum`, N = 1,048,576 | 1.8 ms | 1.2 ms | **1.46x** |
+| `sum_sq_dev`, N = 1,048,576 | 9.4 ms | 842.1 us | **11.17x** |
 
 ### Vectorisation alone
 
@@ -38,9 +38,9 @@ shape, so this is the vector unit and nothing else.
 
 | | scalar | vectorised | speedup |
 |---|---|---|---|
-| `tree_sum`, N = 1,024 | 842 ns | 399 ns | **2.11x** |
-| `tree_sum`, N = 65,536 | 55.4 us | 32.4 us | **1.71x** |
-| `tree_sum`, N = 1,048,576 | 902.3 us | 545.4 us | **1.65x** |
+| `tree_sum`, N = 1,024 | 749 ns | 337 ns | **2.22x** |
+| `tree_sum`, N = 65,536 | 52.2 us | 30.7 us | **1.70x** |
+| `tree_sum`, N = 1,048,576 | 1.3 ms | 1.2 ms | **1.06x** |
 
 ## Engine
 
@@ -50,12 +50,12 @@ Both produce identical bits.
 
 | | scalar | auto | speedup |
 |---|---|---|---|
-| `gaussian_d3`, N = 16,384 | 3.9 ms | 1.7 ms | **2.33x** |
-| `bistable`, N = 16,384 | 3.0 ms | 945.5 us | **3.15x** |
-| `markov`, N = 16,384 | 2.9 ms | 928.2 us | **3.13x** |
-| `gaussian_d3`, N = 262,144 | 61.6 ms | 24.5 ms | **2.52x** |
-| `bistable`, N = 262,144 | 47.1 ms | 15.1 ms | **3.12x** |
-| `markov`, N = 262,144 | 45.9 ms | 14.7 ms | **3.13x** |
+| `gaussian_d3`, N = 16,384 | 3.8 ms | 1.8 ms | **2.16x** |
+| `bistable`, N = 16,384 | 3.2 ms | 1.1 ms | **2.89x** |
+| `markov`, N = 16,384 | 3.1 ms | 1.1 ms | **2.87x** |
+| `gaussian_d3`, N = 262,144 | 69.2 ms | 27.8 ms | **2.49x** |
+| `bistable`, N = 262,144 | 51.7 ms | 17.5 ms | **2.95x** |
+| `markov`, N = 262,144 | 50.5 ms | 17.3 ms | **2.92x** |
 
 ## Flat storage
 
@@ -64,4 +64,4 @@ into one buffer instead of allocating per draw.
 
 | | trait path | `Family` path | speedup |
 |---|---|---|---|
-| `gaussian_d3`, N = 262,144 | 25.1 ms | 17.6 ms | **1.42x** |
+| `gaussian_d3`, N = 262,144 | 27.8 ms | 20.5 ms | **1.36x** |

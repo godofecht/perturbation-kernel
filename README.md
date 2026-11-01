@@ -110,10 +110,10 @@ number. `gpu_f32` runs those, faster and approximately, and records
 
 | | speedup | against |
 |---|---|---|
-| Reductions | 1.9x to 11.9x | the v1.0.0 reduction |
-| Engine | 2.3x to 3.2x | one thread, scalar loops |
+| Reductions | 1.5x to 11.2x | the v1.0.0 reduction |
+| Engine | 2.2x to 2.9x | one thread, scalar loops |
 
-Measured by CI on AMD EPYC 7763 64-Core Processor (4 cores). Full tables in
+Measured by CI on INTEL(R) XEON(R) PLATINUM 8573C (4 cores). Full tables in
 [BENCHMARKS.md](BENCHMARKS.md).
 
 <!-- BENCH:END -->
