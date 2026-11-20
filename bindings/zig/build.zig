@@ -61,7 +61,7 @@ pub fn build(b: *std.Build) void {
         },
         .windows => {
             for ([_][]const u8{
-                "ntdll", "userenv", "ws2_32", "bcrypt", "advapi32",
+                "ntdll", "userenv", "ws2_32", "bcrypt", "advapi32", "synchronization",
             }) |l| exe.linkSystemLibrary(l);
         },
         else => {

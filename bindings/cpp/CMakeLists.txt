@@ -56,7 +56,8 @@ elseif(UNIX)
   target_link_libraries(perturbation_kernel INTERFACE pthread dl m)
 elseif(WIN32)
   target_link_libraries(perturbation_kernel INTERFACE ntdll userenv ws2_32
-                                                      bcrypt advapi32)
+                                                      bcrypt advapi32
+                                                      synchronization)
 endif()
 
 enable_testing()
