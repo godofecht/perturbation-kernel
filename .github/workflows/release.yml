@@ -5,9 +5,9 @@ name: Release
 #     git tag v2.0.0 && git push origin v2.0.0
 #
 # That builds wheels for every platform, publishes them to PyPI,
-# publishes the Rust crate to crates.io, and publishes the wasm npm
-# package to npmjs.com as perturbation-kernel and to GitHub Packages as
-# @godofecht/perturbation-kernel. Bump the version in
+# publishes the Rust crate to crates.io, stages the wasm npm package on
+# npmjs.com as perturbation-kernel (approve it there to release it), and
+# publishes it to GitHub Packages as @godofecht/perturbation-kernel. Bump the version in
 # bindings/ts/package.json with the tag. Running the workflow by hand
 # builds and uploads the wheels as artifacts without publishing
 # anything, which is the way to check a release before committing to it.
@@ -164,7 +164,7 @@ jobs:
           cargo publish --all-features
 
   npm:
-    name: publish npm package to npmjs.com and GitHub Packages
+    name: stage on npmjs.com, publish to GitHub Packages
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     environment: npm
@@ -172,7 +172,8 @@ jobs:
       contents: read
       # npmjs.com trusted publishing: npm checks this workflow's OIDC
       # token against the publisher configured on the package, so no npm
-      # token is stored here. It also attaches a provenance statement.
+      # token is stored here. The publisher may only stage: each version
+      # waits on npmjs.com until the owner approves it with a security key.
       id-token: write
       # GitHub Packages: GITHUB_TOKEN can publish packages owned by this
       # repository's owner. The `repository` field links the package to
@@ -183,10 +184,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      # Node 24 ships npm 11, which trusted publishing needs (11.5.1+).
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
+      # `npm stage` arrived after the npm bundled with some Node 24
+      # releases. 11.21.3 is the oldest version checked to have it.
+      - name: Install an npm with staged publishing
+        run: npm install -g npm@11.21.3 && npm -v
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: v0.13.1
@@ -205,14 +209,18 @@ jobs:
             exit 1
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-      - name: Publish to npmjs.com
+      # Staged: the version appears under the package's staged versions
+      # on npmjs.com and goes live once approved there (or with
+      # `npm stage approve <id>`).
+      - name: Stage on npmjs.com
         working-directory: bindings/ts
         run: |
           if npm view "perturbation-kernel@$VERSION" version >/dev/null 2>&1; then
-            echo "::notice::npmjs.com already has $VERSION; nothing to publish."
+            echo "::notice::npmjs.com already has $VERSION; nothing to stage."
             exit 0
           fi
-          npm publish --access public --ignore-scripts
+          npm stage publish . --access public --ignore-scripts
+          echo "::notice::perturbation-kernel@$VERSION is staged on npmjs.com and needs approval there."
       # GitHub's npm registry only accepts names scoped to the owner, so
       # the same files go out as @godofecht/perturbation-kernel.
       - name: Publish to GitHub Packages
