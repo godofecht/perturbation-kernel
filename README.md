@@ -7,6 +7,7 @@ the bit level. Rust core, six language bindings.
 [![Docs](https://github.com/godofecht/perturbation-kernel/actions/workflows/docs.yml/badge.svg)](https://godofecht.github.io/perturbation-kernel/)
 [![PyPI](https://img.shields.io/pypi/v/perturbation-kernel?logo=pypi&logoColor=white)](https://pypi.org/project/perturbation-kernel/)
 [![crates.io](https://img.shields.io/crates/v/perturbation-kernel?logo=rust&logoColor=white)](https://crates.io/crates/perturbation-kernel)
+[![npm](https://img.shields.io/npm/v/perturbation-kernel?logo=npm&logoColor=white)](https://www.npmjs.com/package/perturbation-kernel)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue?logo=python&logoColor=white)](https://pypi.org/project/perturbation-kernel/)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange?logo=rust&logoColor=white)](https://github.com/godofecht/perturbation-kernel/blob/main/Cargo.toml)
 [![License](https://img.shields.io/pypi/l/perturbation-kernel)](LICENSE)
@@ -48,7 +49,7 @@ mathematics and the schema governs the wire formats.
 | **Zig** · `@cImport` module | `bindings/zig/` | C ABI |
 | **Julia** · `ccall` module | `bindings/julia/` | C ABI |
 | **R / RStudio** · `.Call` wrapper | `bindings/r/` | C ABI |
-| **TypeScript** · Node, Deno, browser | `bindings/ts/` | wasm32 |
+| **TypeScript** · Node.js, via npm | `bindings/ts/` | wasm32 |
 | **Lean 4 / Mathlib** · formal proof interfaces | `lean/` | probability-measure preservation, finite-state sensitivity, and conditional analytical bounds; dedicated CI build and axiom audit |
 
 Every binding routes through the same engine. CI runs a cross-language
@@ -70,12 +71,12 @@ typescript     0.8802871704101562     3fec2b5000000000
 ```bash
 pip install perturbation-kernel          # Python
 cargo add perturbation-kernel            # Rust
+npm install perturbation-kernel          # Node.js (wasm)
 ```
 
-The other five are built from this repository rather than pulled from a
+The other four are built from this repository rather than pulled from a
 registry. C++, Zig, Julia and R link the C ABI produced by
-`cargo build --release`; TypeScript builds a wasm module with
-`wasm-pack`. See `bindings/` for the per-language build and the
+`cargo build --release`. See `bindings/` for the per-language build and the
 conformance test each one ships.
 
 ## Backends

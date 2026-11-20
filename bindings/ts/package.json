@@ -4,16 +4,37 @@
   "description": "Reproducible perturbation-kernel estimators, compiled to WebAssembly",
   "main": "index.js",
   "types": "index.d.ts",
-  "files": ["index.js", "index.d.ts", "pkg/", "README.md"],
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "pkg/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "wasm-pack build --target nodejs --out-dir pkg --release",
-    "test": "node tests/test.mjs"
+    "build": "wasm-pack build --target nodejs --out-dir pkg --release && node scripts/strip-pkg-ignore.mjs",
+    "test": "node tests/test.mjs",
+    "check-pack": "node scripts/check-pack.mjs",
+    "prepublishOnly": "node scripts/strip-pkg-ignore.mjs && npm test && node scripts/check-pack.mjs"
   },
-  "keywords": ["monte-carlo", "reproducibility", "statistics", "wasm", "webassembly"],
+  "keywords": [
+    "monte-carlo",
+    "reproducibility",
+    "statistics",
+    "wasm",
+    "webassembly"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/godofecht/perturbation-kernel.git"
+    "url": "git+https://github.com/godofecht/perturbation-kernel.git",
+    "directory": "bindings/ts"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "homepage": "https://godofecht.github.io/perturbation-kernel/",
+  "bugs": {
+    "url": "https://github.com/godofecht/perturbation-kernel/issues"
+  }
 }

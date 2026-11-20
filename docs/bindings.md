@@ -118,9 +118,14 @@ for `libperturbation_kernel` on the default search path.
 
 ## R / RStudio\n\nThe R package is a thin `.Call` wrapper over the same C ABI and is usable directly from RStudio.\n\n```r\nlibrary(perturbationkernel)\nr <- pk_run(pk_markov(k = 5L, theta_max = 0.3),\n            pk_config(n = 262144L, seed = 20260610L))\nr$value\n```\n\n```bash\ncargo build --release\nR CMD INSTALL bindings/r\nRscript bindings/r/tests/smoke.R\n```\n\n## TypeScript
 
-Compiled to `wasm32-unknown-unknown`, so it runs in Node, Deno and the
-browser with no native toolchain on the consumer's machine. Ships
-`.d.ts` types.
+Compiled to `wasm32-unknown-unknown` and published to npm, so it
+installs in Node.js 18+ with no native toolchain on the consumer's
+machine. Ships `.d.ts` types. The published build targets Node; a
+browser build needs `wasm-pack build --target web` from this directory.
+
+```bash
+npm install perturbation-kernel
+```
 
 ```typescript
 import * as pk from "perturbation-kernel";
