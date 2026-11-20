@@ -9,7 +9,8 @@ the other four are built from this repository.
 | Python | PyO3, abi3 wheels | `python/` |
 | C / C++ | C ABI, header-only C++20 | `bindings/cpp/` |
 | Zig | `@cImport` over the C ABI | `bindings/zig/` |
-| Julia | `ccall` over the C ABI | `bindings/julia/` |\n| R / RStudio | `.Call` over the C ABI | `bindings/r/` |
+| Julia | `ccall` over the C ABI | `bindings/julia/` |
+| R / RStudio | `.Call` over the C ABI | `bindings/r/` |
 | TypeScript | wasm32 via `wasm-bindgen` | `bindings/ts/` |
 
 ## They return the same bits
@@ -116,7 +117,24 @@ PK_LIBRARY=$PWD/target/release/libperturbation_kernel.dylib \
 `PK_LIBRARY` points at the shared library; without it the module looks
 for `libperturbation_kernel` on the default search path.
 
-## R / RStudio\n\nThe R package is a thin `.Call` wrapper over the same C ABI and is usable directly from RStudio.\n\n```r\nlibrary(perturbationkernel)\nr <- pk_run(pk_markov(k = 5L, theta_max = 0.3),\n            pk_config(n = 262144L, seed = 20260610L))\nr$value\n```\n\n```bash\ncargo build --release\nR CMD INSTALL bindings/r\nRscript bindings/r/tests/smoke.R\n```\n\n## TypeScript
+## R / RStudio
+
+The R package is a thin `.Call` wrapper over the same C ABI and is usable directly from RStudio.
+
+```r
+library(perturbationkernel)
+r <- pk_run(pk_markov(k = 5L, theta_max = 0.3),
+            pk_config(n = 262144L, seed = 20260610L))
+r$value
+```
+
+```bash
+cargo build --release
+R CMD INSTALL bindings/r
+Rscript bindings/r/tests/smoke.R
+```
+
+## TypeScript
 
 Compiled to `wasm32-unknown-unknown` and published to npm, so it
 installs in Node.js 18+ with no native toolchain on the consumer's

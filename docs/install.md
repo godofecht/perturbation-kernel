@@ -71,7 +71,16 @@ cargo build --release
 
 See the [C API reference](c-api.md).
 
-## R / RStudio\n\n```bash\ncargo build --release\nR CMD INSTALL bindings/r\n```\n\nSee [Language bindings](bindings.md) for the R API and RStudio quickstart.\n\n## Lean 4
+## R / RStudio
+
+```bash
+cargo build --release
+R CMD INSTALL bindings/r
+```
+
+See [Language bindings](bindings.md) for the R API and RStudio quickstart.
+
+## Lean 4
 
 ```bash
 cd lean/PerturbationKernel
