@@ -6,9 +6,9 @@ name: Release
 #
 # That builds wheels for every platform, publishes them to PyPI,
 # publishes the Rust crate to crates.io, and publishes the wasm npm
-# package to GitHub Packages as @godofecht/perturbation-kernel. The
-# unscoped npmjs.com package is still published by hand from
-# bindings/ts. Bump the version in bindings/ts/package.json with the tag. Running the workflow by hand
+# package to npmjs.com as perturbation-kernel and to GitHub Packages as
+# @godofecht/perturbation-kernel. Bump the version in
+# bindings/ts/package.json with the tag. Running the workflow by hand
 # builds and uploads the wheels as artifacts without publishing
 # anything, which is the way to check a release before committing to it.
 on:
@@ -163,26 +163,30 @@ jobs:
           fi
           cargo publish --all-features
 
-  github-packages:
-    name: publish npm package to GitHub Packages
+  npm:
+    name: publish npm package to npmjs.com and GitHub Packages
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    environment: npm
     permissions:
       contents: read
-      # GITHUB_TOKEN can publish packages owned by this repository's
-      # owner. The package is linked to this repo through the
-      # `repository` field, so it shows in the repo's Packages sidebar.
+      # npmjs.com trusted publishing: npm checks this workflow's OIDC
+      # token against the publisher configured on the package, so no npm
+      # token is stored here. It also attaches a provenance statement.
+      id-token: write
+      # GitHub Packages: GITHUB_TOKEN can publish packages owned by this
+      # repository's owner. The `repository` field links the package to
+      # this repo, which puts it in the repo's Packages sidebar.
       packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+      # Node 24 ships npm 11, which trusted publishing needs (11.5.1+).
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-          registry-url: https://npm.pkg.github.com
-          scope: "@godofecht"
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: v0.13.1
@@ -192,19 +196,32 @@ jobs:
           npm run build
           npm test
           npm run check-pack
-      # GitHub's npm registry only accepts names scoped to the owner, so
-      # the same files go out as @godofecht/perturbation-kernel. The
-      # unscoped name stays on npmjs.com.
-      - name: Publish under the owner scope
+      - name: Check the package version matches the tag
         working-directory: bindings/ts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(node -p 'require("./package.json").version')
           if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
             echo "::error::bindings/ts/package.json is $VERSION but the tag is $GITHUB_REF_NAME"
             exit 1
           fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - name: Publish to npmjs.com
+        working-directory: bindings/ts
+        run: |
+          if npm view "perturbation-kernel@$VERSION" version >/dev/null 2>&1; then
+            echo "::notice::npmjs.com already has $VERSION; nothing to publish."
+            exit 0
+          fi
+          npm publish --access public --ignore-scripts
+      # GitHub's npm registry only accepts names scoped to the owner, so
+      # the same files go out as @godofecht/perturbation-kernel.
+      - name: Publish to GitHub Packages
+        working-directory: bindings/ts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n@godofecht:registry=https://npm.pkg.github.com\n' > "$RUNNER_TEMP/gh.npmrc"
+          export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/gh.npmrc"
           node -e '
             const fs = require("fs");
             const p = JSON.parse(fs.readFileSync("package.json"));
